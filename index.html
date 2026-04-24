@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Cabañas</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#165DFF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Cabañas">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1005/1005141.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- CONFIGURACIÓN DE ESTILOS MEJORADOS -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CBCB',
+                        success: '#00B42A',
+                        warning: '#FF7D00',
+                        danger: '#F53F3F',
+                        dark: '#1D2129',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Poppins', sans-serif; }
+        
+        /* Fondo con gradiente y animación */
+        .gradient-bg { 
+            background: linear-gradient(135deg, #165DFF 0%, #36CBCB 100%); 
+        }
+        
+        .card-gradient {
+            background: linear-gradient(145deg, #ffffff, #f0f4f8);
+        }
+
+        /* Efecto de sombra suave */
+        .card-shadow { 
+            box-shadow: 0 8px 30px rgba(22, 93, 255, 0.12);
+            transition: all 0.3s ease;
+        }
+        .card-shadow:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(22, 93, 255, 0.2);
+        }
+
+        /* Scroll bonito */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(#165DFF, #36CBCB); border-radius: 4px; }
+
+        /* Pantalla de carga */
+        .loading {
+            position: fixed; inset: 0; background: linear-gradient(135deg, #165DFF, #36CBCB); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;
+        }
+
+        /* Botones con efecto */
+        .btn-primary {
+            background: linear-gradient(135deg, #165DFF 0%, #0047CC 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: scale(1.02);
+        }
+
+        /* Para que se vea como App */
+        :root {
+            --tg-theme-bg-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- 🔄 PANTALLA DE CARGA MEJORADA -->
+    <div id="loadingScreen" class="loading">
+        <div class="w-20 h-20 border-4 border-white/30 border-t-white rounded-full animate-spin mb-6"></div>
+        <h2 class="text-3xl font-bold">Cabañas Rodriguez AS</h2>
+        <p class="text-white/80 mt-2">Conectando con la nube...</p>
+    </div>
+
+    <!-- 🔐 LOGIN -->
+    <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-100 hidden">
+        <div class="bg-white p-8 rounded-2xl card-shadow max-w-md w-full mx-4">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 gradient-bg rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-home text-4xl text-white"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-dark">Bienvenido</h2>
+                <p class="text-gray-500">Ingrese para continuar</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+                    <input type="text" id="loginUser" placeholder="Nombre de usuario" class="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" placeholder="••••••••" class="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+                </div>
+                <button type="submit" class="w-full btn-primary text-white font-medium py-3 rounded-lg transition-all">
+                    INGRESAR <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+                <p id="loginError" class="text-red-500 text-sm text-center hidden">Usuario o contraseña incorrectos</p>
+            </form>
+        </div>
+    </div>
+
+    <div id="mainApp" class="hidden">
+        <div class="flex h-screen overflow-hidden">
+
+            <!-- 🔵 MENÚ LATERAL -->
+            <aside id="sidebar" class="w-64 gradient-bg text-white flex flex-col transition-all duration-300 lg:translate-x-0 fixed lg:relative z-40 h-full -translate-x-full">
+                <div class="p-6 text-center border-b border-white/20">
+                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-building text-2xl"></i>
+                    </div>
+                    <h1 class="text-xl font-bold">Cabañas Rodriguez AS</h1>
+                    <p class="text-blue-100 text-xs mt-1">Gestión Empresarial</p>
+                </div>
+
+                <nav class="flex-1 overflow-y-auto p-4">
+                    <ul class="space-y-2">
+                        <li><a href="#dashboard" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="dashboard"><i class="fas fa-chart-pie w-5 text-center"></i> Dashboard</a></li>
+                        <li><a href="#trabajadores" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="trabajadores"><i class="fas fa-users w-5 text-center"></i> Trabajadores</a></li>
+                        <li><a href="#materiales" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="materiales"><i class="fas fa-boxes-stacked w-5 text-center"></i> Materiales</a></li>
+                        <li><a href="#modelos" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="modelos"><i class="fas fa-sitemap w-5 text-center"></i> Modelos</a></li>
+                        <li><a href="#proyectos" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="proyectos"><i class="fas fa-hard-hat w-5 text-center"></i> Proyectos</a></li>
+                        <li><a href="#gastos" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="gastos"><i class="fas fa-file-invoice-dollar w-5 text-center"></i> Gastos</a></li>
+                        <li><a href="#usuarios" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="usuarios"><i class="fas fa-user-shield w-5 text-center"></i> Administradores</a></li>
+                    </ul>
+                </nav>
+                
+                <div class="p-4 border-t border-white/20">
+                    <button onclick="logout()" class="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 p-3 rounded-lg transition-all">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </aside>
+
+            <!-- 🟢 CONTENIDO PRINCIPAL -->
+            <main class="flex-1 flex flex-col overflow-hidden bg-gray-50">
+                <header class="bg-white shadow-sm border-b p-4 flex justify-between items-center">
+                    <button id="menuToggle" class="lg:hidden text-gray-700 text-xl"><i class="fas fa-bars"></i></button>
+                    <div class="flex-1 px-4"><h2 id="sectionTitle" class="text-xl font-semibold text-dark">Dashboard</h2></div>
+                    <div class="flex items-center gap-4">
+                        <button onclick="exportarTodo()" class="bg-success hover:opacity-90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all">
+                            <i class="fas fa-file-excel"></i> Exportar Excel
+                        </button>
+                        <!-- BOTÓN DE INSTALAR APP -->
+                        <button id="installBtn" class="hidden bg-warning hover:opacity-90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all">
+                            <i class="fas fa-download"></i> Instalar App
+                        </button>
+                    </div>
+                </header>
+
+                <div class="flex-1 overflow-y-auto p-4 md:p-6">
+
+                    <!-- DASHBOARD -->
+                    <section id="dashboard" class="section-content">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <div class="bg-white rounded-xl p-6 card-shadow">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-gray-500 text-sm">Trabajadores</p>
+                                        <h3 class="text-3xl font-bold text-primary" id="count-workers">0</h3>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <i class="fas fa-users text-primary text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-xl p-6 card-shadow">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-gray-500 text-sm">Proyectos</p>
+                                        <h3 class="text-3xl font-bold text-warning" id="count-projects">0</h3>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
+                                        <i class="fas fa-hard-hat text-warning text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-xl p-6 card-shadow">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-gray-500 text-sm">Materiales</p>
+                                        <h3 class="text-3xl font-bold text-success" id="count-materials">0</h3>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                                        <i class="fas fa-boxes text-success text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-xl p-6 card-shadow">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-gray-500 text-sm">Gastos</p>
+                                        <h3 class="text-3xl font-bold text-danger" id="sum-expenses">$0</h3>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
+                                        <i class="fas fa-money-bill-wave text-danger text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-white p-6 rounded-xl card-shadow"><h3 class="font-semibold mb-4">Costos por Proyecto</h3><canvas id="chartProjects"></canvas></div>
+                            <div class="bg-white p-6 rounded-xl card-shadow"><h3 class="font-semibold mb-4">Distribución de Gastos</h3><canvas id="chartExpenses"></canvas></div>
+                        </div>
+                    </section>
+
+                    <!-- RESTO DE LAS SECCIONES (IGUAL PERO MÁS BONITAS) -->
+                    <section id="trabajadores" class="section-content hidden">
+                        <div class="bg-white rounded-xl p-6 card-shadow mb-6">
+                            <h3 class="text-lg font-semibold mb-4 text-dark"><i class="fas fa-plus-circle text-primary"></i> Nuevo Trabajador</h3>
+                            <form id="formWorker" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <input type="text" id="wName" placeholder="Nombre Completo" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none" required>
+                                <input type="text" id="wDoc" placeholder="Documento / CI" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none" required>
+                                <input type="text" id="wContact" placeholder="Teléfono" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
+                                <input type="number" id="wSalary" placeholder="Salario Diario ($)" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none" required>
+                                <button type="submit" class="btn-primary text-white py-3 px-6 rounded-lg md:col-span-3">Guardar Trabajador</button>
+                            </form>
+                        </div>
+                        <div class="bg-white rounded-xl p-6 card-shadow">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="bg-gray-50 text-gray-600">
+                                        <tr><th class="p-3">Nombre</th><th class="p-3">Documento</th><th class="p-3">Salario</th><th class="p-3">Días</th><th class="p-3">Adelantos</th><th class="p-3">Total</th><th class="p-3">Acc</th></tr>
+                                    </thead>
+                                    <tbody id="tableWorkers" class="divide-y divide-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- MATERIALES -->
+                    <section id="materiales" class="section-content hidden">
+                        <div class="bg-white rounded-xl p-6 card-shadow mb-6">
+                            <h3 class="text-lg font-semibold mb-4 text-dark"><i class="fas fa-plus-circle text-success"></i> Nuevo Material</h3>
+                            <form id="formMaterial" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <input type="text" id="mName" placeholder="Nombre" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-success/50 outline-none" required>
+                                <input type="text" id="mUnit" placeholder="Unidad" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-success/50 outline-none" required>
+                                <input type="number" id="mStock" placeholder="Stock" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-success/50 outline-none" required>
+                                <input type="number" id="mPrice" placeholder="Precio $" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-success/50 outline-none" required>
+                                <button type="submit" class="bg-success hover:opacity-90 text-white py-3 px-6 rounded-lg md:col-span-4">Agregar Material</button>
+                            </form>
+                        </div>
+                        <div class="bg-white rounded-xl p-6 card-shadow">
+                            <table class="w-full text-left">
+                                <thead class="bg-gray-50"><tr><th class="p-3">Material</th><th class="p-3">Unidad</th><th class="p-3">Stock</th><th class="p-3">Precio</th><th class="p-3">Total</th></tr></thead>
+                                <tbody id="tableMaterials" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section id="modelos" class="section-content hidden">
+                         <div class="bg-white rounded-xl p-6 card-shadow mb-6">
+                            <h3 class="text-lg font-semibold mb-4 text-dark"><i class="fas fa-home text-purple-600"></i> Crear Modelo</h3>
+                            <form id="formModel" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <input type="text" id="modName" placeholder="Nombre Modelo" class="border border-gray-200 p-3 rounded-lg outline-none" required>
+                                <input type="text" id="modSize" placeholder="Tamaño / Mts2" class="border border-gray-200 p-3 rounded-lg outline-none" required>
+                                <textarea id="modDesc" placeholder="Descripción" class="border border-gray-200 p-3 rounded-lg md:col-span-2 outline-none"></textarea>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium mb-2">Materiales necesarios:</label>
+                                    <div id="materialsCheckList" class="grid grid-cols-2 md:grid-cols-4 gap-2 border p-4 rounded-lg bg-gray-50 max-h-60 overflow-y-auto"></div>
+                                </div>
+                                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg md:col-span-2">Guardar Modelo</button>
+                            </form>
+                        </div>
+                        <div id="listModels" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+                    </section>
+
+                    <section id="proyectos" class="section-content hidden">
+                        <div class="bg-white rounded-xl p-6 card-shadow mb-6">
+                            <h3 class="text-lg font-semibold mb-4 text-dark"><i class="fas fa-hard-hat text-warning"></i> Nuevo Proyecto</h3>
+                            <form id="formProject" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <input type="text" id="pName" placeholder="Nombre de la Obra" class="border border-gray-200 p-3 rounded-lg outline-none" required>
+                                <input type="date" id="pDateStart" class="border border-gray-200 p-3 rounded-lg outline-none" required>
+                                <select id="pModel" class="border border-gray-200 p-3 rounded-lg outline-none">
+                                    <option value="">Seleccionar Modelo</option>
+                                </select>
+                                <textarea id="pAddress" placeholder="Ubicación / Dirección" class="border border-gray-200 p-3 rounded-lg md:col-span-3 outline-none"></textarea>
+                                <button type="submit" class="bg-warning hover:opacity-90 text-white py-3 px-6 rounded-lg md:col-span-3">Iniciar Proyecto</button>
+                            </form>
+                        </div>
+                        <div id="listProjects" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    </section>
+
+                    <section id="gastos" class="section-content hidden">
+                        <div class="bg-white rounded-xl p-6 card-shadow mb-6">
+                            <h3 class="text-lg font-semibold mb-4 text-dark"><i class="fas fa-plus-circle text-danger"></i> Registrar Gasto</h3>
+                            <form id="formExpense" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <input type="text" id="eDesc" placeholder="Descripción" class="border border-gray-200 p-3 rounded-lg outline-none" required>
+                                <input type="number" id="eAmount" placeholder="Monto ($)" class="border border-gray-200 p-3 rounded-lg outline-none" required>
+                                <select id="eCategory" class="border border-gray-200 p-3 rounded-lg outline-none">
+                                    <option value="Materiales">Materiales</option>
+                                    <option value="Transporte">Transporte</option>
+                                    <option value="Herramientas">Herramientas</option>
+                                    <option value="Pagos">Pagos Personal</option>
+                                    <option value="Otros">Otros</option>
+                                </select>
+                                <select id="eProject" class="border border-gray-200 p-3 rounded-lg outline-none">
+                                    <option value="">General / Sin proyecto</option>
+                                </select>
+                                <button type="submit" class="bg-danger hover:opacity-90 text-white py-3 px-6 rounded-lg md:col-span-4">Registrar Gasto</button>
+                            </form>
+                        </div>
+                        <div class="bg-white rounded-xl p-6 card-shadow">
+                            <h3 class="text-lg font-semibold mb-4">Historial de Gastos</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="bg-gray-50"><tr class="text-gray-600">
+                                        <th class="p-3">Fecha</th><th class="p-3">Descripción</th><th class="p-3">Categoría</th><th class="p-3">Proyecto</th><th class="p-3">Monto</th>
+                                    </tr></thead>
+                                    <tbody id="tableExpenses" class="divide-y divide-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="usuarios" class="section-content hidden">
+                        <div class="bg-white rounded-xl p-6 card-shadow mb-6">
+                            <h3 class="text-lg font-semibold mb-4 text-dark"><i class="fas fa-user-plus text-indigo-600"></i> Crear Nuevo Administrador</h3>
+                            <form id="formUser" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <input type="text" id="uName" placeholder="Nombre Completo" class="border border-gray-200 p-3 rounded-lg outline-none" required>
+                                <input type="text" id="uUser" placeholder="Nombre de Usuario" class="border border-gray-200 p-3 rounded-lg outline-none" required>
+                                <input type="password" id="uPass" placeholder="Contraseña" class="border border-gray-200 p-3 rounded-lg outline-none" required>
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg md:col-span-3">Crear Usuario</button>
+                            </form>
+                        </div>
+                        <div class="bg-white rounded-xl p-6 card-shadow">
+                            <h3 class="text-lg font-semibold mb-4">Lista de Administradores</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="bg-gray-50"><tr class="text-gray-600">
+                                        <th class="p-3">Nombre</th><th class="p-3">Usuario</th><th class="p-3">Acciones</th>
+                                    </tr></thead>
+                                    <tbody id="tableUsers" class="divide-y divide-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL MEJORADO -->
+    <div id="detailModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto card-shadow">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 id="modalTitle" class="text-xl font-bold text-dark">Detalles del Proyecto</h3>
+                <button onclick="closeModal()" class="text-gray-500 text-xl hover:text-dark"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="modalBody" class="p-6"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONFIGURACIÓN DE LA NUBE =====
+        const CLOUD_API_URL = "https://sheetdb.io/api/v1/c2kbo0sf3w59q"; // <-- ¡ASEGURATE DE PONER TU URL AQUI!
+
+        const defaultDB = {
+            users: [ { id: 1, name: "Administrador Principal", username: "admin", password: "1234" } ],
+            workers: [], materials: [], models: [], projects: [], expenses: []
+        };
+
+        let db = JSON.parse(JSON.stringify(defaultDB));
+        let currentUser = null;
+        let charts = {};
+        let deferredPrompt;
+
+        // ===== FUNCIONES DE CONEXIÓN (FUNCIONANDO) =====
+        async function loadData() {
+            try {
+                document.getElementById('loadingScreen').classList.remove('hidden');
+                const response = await fetch(CLOUD_API_URL);
+                if (!response.ok) throw new Error("Error");
+                const data = await response.json();
+                
+                if(data && data.length > 0) {
+                    const dataRow = data.find(row => row.content);
+                    if(dataRow && dataRow.content) db = JSON.parse(dataRow.content);
+                }
+                if(!db.users.some(u=>u.username==="admin")) { db.users.unshift(...defaultDB.users); await saveData(); }
+            } catch (error) {
+                console.error(error);
+                const saved = localStorage.getItem('cabanasDB');
+                if(saved) db = { ...db, ...JSON.parse(saved) };
+            } finally {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                document.getElementById('loginScreen').classList.remove('hidden');
+                renderAll();
+            }
+        }
+
+        async function saveData() {
+            try {
+                localStorage.setItem('cabanasDB', JSON.stringify(db));
+                await fetch(CLOUD_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: JSON.stringify(db) })
+                });
+            } catch (error) {
+                console.error("Error guardando:", error);
+            }
+        }
+
+        // ===== CÓDIGO PARA INSTALAR COMO APP (OPCIÓN 2) =====
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').classList.remove('hidden');
+        });
+
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if(deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if(outcome === 'accepted') console.log('App instalada');
+                deferredPrompt = null;
+                document.getElementById('installBtn').classList.add('hidden');
+            }
+        });
+
+        // ===== LOGIN Y NAVEGACIÓN =====
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const user = db.users.find(u => u.username === document.getElementById('loginUser').value && u.password === document.getElementById('loginPass').value);
+            if(user) {
+                currentUser = user;
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('userLogged').textContent = `Usuario: ${user.username}`;
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+                setTimeout(()=>document.getElementById('loginError').classList.add('hidden'), 3000);
+            }
+        });
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = link.dataset.section;
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('bg-white/20'));
+                link.classList.add('bg-white/20');
+                document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
+                document.getElementById(section).classList.remove('hidden');
+                document.getElementById('sectionTitle').textContent = link.textContent.trim();
+                if(window.innerWidth < 1024) document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            });
+        });
+
+        // ===== FUNCIONES DEL SISTEMA =====
+        document.getElementById('formWorker').addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.workers.push({id:Date.now(), name:document.getElementById('wName').value, doc:document.getElementById('wDoc').value, contact:document.getElementById('wContact').value, salaryDay:parseFloat(document.getElementById('wSalary').value), daysWorked:0, advances:0});
+            saveData(); renderWorkers(); updateCounts(); e.target.reset();
+        });
+        function renderWorkers() {
+            document.getElementById('tableWorkers').innerHTML = db.workers.map(w => `
+            <tr class="hover:bg-gray-50"><td class="p-3">${w.name}</td><td class="p-3">${w.doc}</td><td class="p-3">$${w.salaryDay}</td>
+            <td class="p-3"><button onclick="changeDays(${w.id},-1)" class="px-2 bg-gray-200 rounded">-</button> ${w.daysWorked} <button onclick="changeDays(${w.id},1)" class="px-2 bg-gray-200 rounded">+</button></td>
+            <td class="p-3"><button onclick="addAdvance(${w.id})" class="text-primary underline">$${w.advances}</button></td><td class="p-3 text-success font-bold">$${(w.daysWorked*w.salaryDay)-w.advances}</td></tr>`).join('');
+        }
+        function changeDays(id, amt){ const w=db.workers.find(x=>x.id==id); w.daysWorked=Math.max(0,w.daysWorked+amt); saveData(); renderWorkers(); }
+        function addAdvance(id){ const w=db.workers.find(x=>x.id==id); const v=parseFloat(prompt('Monto:')); if(v) { w.advances+=v; saveData(); renderWorkers(); }}
+
+        document.getElementById('formMaterial').addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.materials.push({id:Date.now(), name:document.getElementById('mName').value, unit:document.getElementById('mUnit').value, stock:parseFloat(document.getElementById('mStock').value), price:parseFloat(document.getElementById('mPrice').value)});
+            saveData(); renderMaterials(); updateMaterialChecks(); updateCounts(); e.target.reset();
+        });
+        function renderMaterials(){
+            document.getElementById('tableMaterials').innerHTML = db.materials.map(m => `
+            <tr class="hover:bg-gray-50">
+                <td class="p-3">${m.name}</td><td class="p-3">${m.unit}</td><td class="p-3">${m.stock}</td>
+                <td class="p-3">$${m.price}</td><td class="p-3 font-bold text-success">$${m.stock * m.price}</td>
+            </tr>`).join('');
+        }
+        function updateMaterialChecks(){
+            document.getElementById('materialsCheckList').innerHTML = db.materials.map(m => 
+                `<label class="p-2 border rounded bg-white"><input type="checkbox" value="${m.id}" class="mat-check"> ${m.name}</label>`
+            ).join('');
+        }
+
+        document.getElementById('formModel').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const sel = Array.from(document.querySelectorAll('.mat-check:checked')).map(el=>parseFloat(el.value));
+            db.models.push({id:Date.now(), name:document.getElementById('modName').value, size:document.getElementById('modSize').value, desc:document.getElementById('modDesc').value, materialsIds:sel});
+            saveData(); renderModels(); updateProjectModels(); e.target.reset();
+        });
+        function renderModels(){
+            document.getElementById('listModels').innerHTML = db.models.map(mod => {
+                const mats = mod.materialsIds.map(id => db.materials.find(x=>x.id==id)?.name || '').join(', ');
+                return `
+                <div class="bg-white rounded-xl p-6 card-shadow">
+                    <h4 class="font-bold text-lg text-dark">${mod.name}</h4>
+                    <p class="text-gray-500">${mod.size}</p>
+                    <p class="text-sm mt-2">${mod.desc}</p>
+                    <div class="mt-4 pt-4 border-t">
+                        <p class="text-xs text-gray-500">Materiales:</p>
+                        <p class="text-sm">${mats || 'Ninguno'}</p>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ===== PROYECTOS =====
+        function updateProjectModels(){
+            document.getElementById('pModel').innerHTML = '<option value="">Seleccionar Modelo</option>' + db.models.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+        }
+        document.getElementById('formProject').addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.projects.push({id:Date.now(), name:document.getElementById('pName').value, dateStart:document.getElementById('pDateStart').value, modelId:parseInt(document.getElementById('pModel').value), address:document.getElementById('pAddress').value, status:'En construcción', progress:0});
+            saveData(); renderProjects(); updateExpenseProjects(); updateCounts(); e.target.reset();
+        });
+        function renderProjects(){
+            document.getElementById('listProjects').innerHTML = db.projects.map(p => {
+                const model = db.models.find(m=>m.id==p.modelId);
+                return `
+                <div class="bg-white rounded-xl p-6 card-shadow">
+                    <h4 class="font-bold text-lg">${p.name}</h4>
+                    <p class="text-gray-500 text-sm">Modelo: ${model ? model.name : 'General'}</p>
+                    <p class="text-xs mt-1">${p.address}</p>
+                    <div class="mt-4">
+                        <p class="text-sm mb-2">Avance: <strong>${p.progress}%</strong></p>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-primary h-2 rounded-full transition-all" style="width: ${p.progress}%"></div>
+                        </div>
+                    </div>
+                    <button onclick="openProjectDetails(${p.id})" class="mt-4 w-full btn-primary text-white py-2 rounded">Ver Detalles</button>
+                </div>`;
+            }).join('');
+        }
+        function openProjectDetails(id){
+            const p = db.projects.find(x=>x.id==id);
+            document.getElementById('modalTitle').textContent = p.name;
+            document.getElementById('modalBody').innerHTML = `
+            <label class="block mb-2">Ajustar avance:</label>
+            <input type="range" min="0" max="100" value="${p.progress}" onchange="updateProgress(${id}, this.value)" class="w-full">
+            <p class="text-center text-3xl font-bold text-primary mt-2">${p.progress}%</p>`;
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+        function closeModal(){ document.getElementById('detailModal').classList.add('hidden'); }
+        function updateProgress(id, val){ const p=db.projects.find(x=>x.id==id); p.progress=val; saveData(); renderProjects(); renderCharts(); }
+
+        // ===== GASTOS =====
+        function updateExpenseProjects(){
+            document.getElementById('eProject').innerHTML = '<option value="">General / Sin proyecto</option>' + db.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        }
+        document.getElementById('formExpense').addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.expenses.push({id:Date.now(), date:new Date().toLocaleDateString(), description:document.getElementById('eDesc').value, amount:parseFloat(document.getElementById('eAmount').value), category:document.getElementById('eCategory').value, projectId:document.getElementById('eProject').value || null});
+            saveData(); renderExpenses(); renderCharts(); updateCounts(); e.target.reset();
+        });
+        function renderExpenses() {
+            document.getElementById('tableExpenses').innerHTML = db.expenses.map(e => {
+                const projName = e.projectId ? (db.projects.find(p => p.id == e.projectId)?.name || 'General') : 'General';
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-3">${e.date}</td><td class="p-3">${e.description}</td><td class="p-3">${e.category}</td>
+                    <td class="p-3">${projName}</td><td class="p-3 font-bold text-danger">$${e.amount}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // ===== USUARIOS =====
+        document.getElementById('formUser').addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.users.push({id:Date.now(), name:document.getElementById('uName').value, username:document.getElementById('uUser').value, password:document.getElementById('uPass').value});
+            saveData(); renderUsers(); e.target.reset(); alert('✅ Usuario creado correctamente');
+        });
+        function renderUsers() {
+            document.getElementById('tableUsers').innerHTML = db.users.map(u => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-3">${u.name}</td><td class="p-3">${u.username}</td>
+                    <td class="p-3"><button onclick="deleteUser(${u.id})" class="text-danger"><i class="fas fa-trash"></i></button></td>
+                </tr>`
+            ).join('');
+        }
+        function deleteUser(id) {
+            if(confirm('¿Eliminar este usuario?')) {
+                db.users = db.users.filter(u => u.id != id);
+                saveData(); renderUsers();
+            }
+        }
+
+        // ===== DASHBOARD =====
+        function updateCounts() {
+            document.getElementById('count-workers').textContent = db.workers.length;
+            document.getElementById('count-projects').textContent = db.projects.length;
+            document.getElementById('count-materials').textContent = db.materials.length;
+            const total = db.expenses.reduce((s, e) => s + e.amount, 0);
+            document.getElementById('sum-expenses').textContent = '$' + total.toFixed(2);
+        }
+        function renderCharts() {
+            if(charts.proj) charts.proj.destroy();
+            charts.proj = new Chart(document.getElementById('chartProjects'), {
+                type: 'bar',
+                data: {
+                    labels: db.projects.map(p => p.name),
+                    datasets: [{ label: 'Gastos ($)', data: db.projects.map(p => db.expenses.filter(e => e.projectId == p.id).reduce((s,e)=>s+e.amount,0)), backgroundColor: '#165DFF' }]
+                }
+            });
+            if(charts.cat) charts.cat.destroy();
+            const cats = ['Materiales', 'Transporte', 'Herramientas', 'Pagos', 'Otros'];
+            charts.cat = new Chart(document.getElementById('chartExpenses'), {
+                type: 'doughnut',
+                data: { labels: cats, datasets: [{ data: cats.map(c => db.expenses.filter(e => e.category == c).reduce((s,e)=>s+e.amount,0)), backgroundColor: ['#10b981','#f59e0b','#ef4444','#8b5cf6','#64748b'] }] }
+            });
+        }
+
+        // ===== EXPORTAR =====
+        function exportarTodo() {
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db.workers), "Trabajadores");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db.materials), "Materiales");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db.projects), "Proyectos");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db.expenses), "Gastos");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db.users.map(u=>({Nombre:u.name,Usuario:u.username}))), "Usuarios");
+            XLSX.writeFile(wb, "Reporte_Completo.xlsx");
+        }
+
+        // ===== INICIALIZAR =====
+        function renderAll() {
+            renderWorkers(); renderMaterials(); updateMaterialChecks();
+            renderModels(); updateProjectModels(); renderProjects();
+            updateExpenseProjects(); renderExpenses(); renderUsers();
+            updateCounts(); renderCharts();
+        }
+
+        // Cargar datos
+        loadData();
+
+        // Registrar Service Worker
+        if ('serviceWorker' in navigator) {
+         window.addEventListener('load', () => {
+         navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => console.log('SW registrado'))
+          .catch(err => console.log('SW error:', err));
+        });
+      }
+
+    </script>
+</body>
+</html>
