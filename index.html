@@ -664,6 +664,34 @@
         });
       }
 
+      // ===== MENU MÓVIL - CÓDIGO DEFINITIVO =====
+        document.addEventListener('DOMContentLoaded', function() {
+            const btn = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+
+            if (btn && sidebar) {
+                btn.addEventListener('click', function() {
+                    sidebar.classList.toggle('-translate-x-full');
+                });
+
+                // Cerrar menú al tocar un enlace
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', function() {
+                        sidebar.classList.add('-translate-x-full');
+                    });
+                });
+            }
+        });
+        // ===== CERRAR MENU AL HACER CLICK FUERA =====
+            document.addEventListener('click', function(event) {
+                const sidebar = document.getElementById('sidebar');
+                const menuBtn = document.getElementById('menuToggle');
+                
+                // Verificar si el click fue FUERA del menu y FUERA del botón
+                if (!sidebar.contains(event.target) && !menuBtn.contains(event.target)) {
+                    sidebar.classList.add('-translate-x-full');
+                }
+            });
     </script>
 </body>
 </html>
