@@ -2,728 +2,1687 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Cabañas</title>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#165DFF">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Cabañas">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1005/1005141.png">
+    <title>Gestión de Obras | Sistema Profesional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <!-- CONFIGURACIÓN DE ESTILOS MEJORADOS -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#165DFF',
-                        secondary: '#36CBCB',
-                        success: '#00B42A',
-                        warning: '#FF7D00',
-                        danger: '#F53F3F',
-                        dark: '#1D2129',
-                    }
-                }
-            }
-        }
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>    
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="manifest" href="/manifest.json">
+   <meta name="theme-color" content="#165DFF">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        * { font-family: 'Poppins', sans-serif; }
-        
-        /* Fondo con gradiente y animación */
-        .gradient-bg { 
-            background: linear-gradient(135deg, #165DFF 0%, #36CBCB 100%); 
-        }
-        
-        .card-gradient {
-            background: linear-gradient(145deg, #ffffff, #f0f4f8);
-        }
-
-        /* Efecto de sombra suave */
-        .card-shadow { 
-            box-shadow: 0 8px 30px rgba(22, 93, 255, 0.12);
-            transition: all 0.3s ease;
-        }
-        .card-shadow:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(22, 93, 255, 0.2);
-        }
-
-        /* Scroll bonito */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: linear-gradient(#165DFF, #36CBCB); border-radius: 4px; }
-
-        /* Pantalla de carga */
-        .loading {
-            position: fixed; inset: 0; background: linear-gradient(135deg, #165DFF, #36CBCB); z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;
-        }
-
-        /* Botones con efecto */
-        .btn-primary {
-            background: linear-gradient(135deg, #165DFF 0%, #0047CC 100%);
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            filter: brightness(1.1);
-            transform: scale(1.02);
-        }
-
-        /* Para que se vea como App */
-        :root {
-            --tg-theme-bg-color: #f8fafc;
-        }
-    </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-100 font-sans text-gray-800">
 
-    <!-- 🔄 PANTALLA DE CARGA MEJORADA -->
-    <div id="loadingScreen" class="loading">
-        <div class="w-20 h-20 border-4 border-white/30 border-t-white rounded-full animate-spin mb-6"></div>
-        <h2 class="text-3xl font-bold">Cabañas Rodriguez AS</h2>
-        <p class="text-white/80 mt-2">Conectando con la nube...</p>
+<!-- LOADING SCREEN -->
+<div id="loadingScreen" class="fixed inset-0 bg-black/50 backdrop-blur-md z-30 opacity-0 pointer-events-none transition-all duration-300">
+    <div class="text-center">
+        <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p class="text-xl font-semibold text-gray-700">Cargando Sistema...</p>
     </div>
+</div>
 
-    <!-- 🔐 LOGIN -->
-    <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-100 hidden">
-        <div class="bg-white p-8 rounded-2xl card-shadow max-w-md w-full mx-4">
-            <div class="text-center mb-8">
-                <div class="w-20 h-20 gradient-bg rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-home text-4xl text-white"></i>
-                </div>
-                <h2 class="text-2xl font-bold text-dark">Bienvenido</h2>
-                <p class="text-gray-500">Ingrese para continuar</p>
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="hidden min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+        <h2 class="text-3xl font-bold text-center text-blue-600 mb-2"><i class="fas fa-hard-hat"></i> Sistema de Obras</h2>
+        <p class="text-center text-gray-500 mb-8">Acceso Administradores</p>
+        <form id="loginForm">
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">Usuario</label>
+                <input type="text" id="loginUser" class="w-full p-3 border rounded-lg" required>
             </div>
-            <form id="loginForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
-                    <input type="text" id="loginUser" placeholder="Nombre de usuario" class="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                    <input type="password" id="loginPass" placeholder="••••••••" class="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
-                </div>
-                <button type="submit" class="w-full btn-primary text-white font-medium py-3 rounded-lg transition-all">
-                    INGRESAR <i class="fas fa-arrow-right ml-2"></i>
-                </button>
-                <p id="loginError" class="text-red-500 text-sm text-center hidden">Usuario o contraseña incorrectos</p>
-            </form>
-        </div>
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-1">Contraseña</label>
+                <input type="password" id="loginPass" class="w-full p-3 border rounded-lg" required>
+            </div>
+            <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold">INGRESAR</button>
+        </form>
     </div>
+</div>
 
-    <div id="mainApp" class="hidden">
-        <div class="flex h-screen overflow-hidden">
+<!-- MAIN APP -->
+<div id="mainApp" class="hidden h-screen flex overflow-hidden">
 
-            <!-- 🔵 MENÚ LATERAL -->
-            <aside id="sidebar" class="w-64 gradient-bg text-white flex flex-col transition-all duration-300 lg:translate-x-0 fixed lg:relative z-40 h-full -translate-x-full">
-                <div class="p-6 text-center border-b border-white/20">
-                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <i class="fas fa-building text-2xl"></i>
-                    </div>
-                    <h1 class="text-xl font-bold">Cabañas Rodriguez AS</h1>
-                    <p class="text-blue-100 text-xs mt-1">Gestión Empresarial</p>
-                </div>
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="w-64 bg-gradient-to-b from-blue-700 to-blue-900 text-white flex flex-col transition-transform duration-300 fixed lg:static h-full z-40 -translate-x-full lg:translate-x-0">
+        <div class="p-6 border-b border-white/20">
+             <h1 class="text-white text-xl font-bold flex items-center gap-2">
+                   <i class="fas fa-hard-hat"></i>
+                   <span>Cabañas Rodríguez AS</span>
+             </h1>
+             <p class="text-blue-100 text-sm mt-1">Gestión Profesional</p>
+         </div>
+         
+        <nav class="flex-1 overflow-y-auto p-4 space-y-2">
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="dashboard">
+                <i class="fas fa-chart-pie w-6 text-center text-lg"></i> <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="trabajadores">
+                <i class="fas fa-users w-6 text-center text-lg"></i> <span>Trabajadores</span>
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="materiales">
+                <i class="fas fa-boxes-stacked w-6 text-center text-lg"></i> <span>Materiales</span>
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="modelos">
+                <i class="fas fa-sitemap w-6 text-center text-lg"></i> <span>Plantillas</span>
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="proyectos">
+                <i class="fas fa-screwdriver-wrench w-6 text-center text-lg"></i> <span>Proyectos</span>
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="gastos">
+                <i class="fas fa-money-bill-transfer w-6 text-center text-lg"></i> <span>Gastos / Finanzas</span>
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="usuarios">
+                <i class="fas fa-user-gear w-6 text-center text-lg"></i> <span>Usuarios</span>
+            </a>
+        </nav>
+        
+        <div class="flex gap-2 mt-4 p-4">
+            <button onclick="exportarExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                Exportar Excel
+            </button>
+            <button onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+                Exportar PDF
+            </button>
+        </div>
 
-                <nav class="flex-1 overflow-y-auto p-4">
-                    <ul class="space-y-2">
-                        <li><a href="#dashboard" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="dashboard"><i class="fas fa-chart-pie w-5 text-center"></i> Dashboard</a></li>
-                        <li><a href="#trabajadores" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="trabajadores"><i class="fas fa-users w-5 text-center"></i> Trabajadores</a></li>
-                        <li><a href="#materiales" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="materiales"><i class="fas fa-boxes-stacked w-5 text-center"></i> Materiales</a></li>
-                        <li><a href="#modelos" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="modelos"><i class="fas fa-sitemap w-5 text-center"></i> Modelos</a></li>
-                        <li><a href="#proyectos" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="proyectos"><i class="fas fa-hard-hat w-5 text-center"></i> Proyectos</a></li>
-                        <li><a href="#gastos" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="gastos"><i class="fas fa-file-invoice-dollar w-5 text-center"></i> Gastos</a></li>
-                        <li><a href="#usuarios" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="usuarios"><i class="fas fa-user-shield w-5 text-center"></i> Administradores</a></li>
-                    </ul>
-                </nav>
+        <div class="p-4 border-t border-white/20">
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 p-3 bg-red-600 hover:bg-red-700 rounded-lg">
+                <i class="fas fa-right-from-bracket"></i> Cerrar Sesión
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 overflow-y-auto">
+        <!-- HEADER -->
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center sticky top-0 z-30">
+            <button id="menuToggle" class="lg:hidden text-2xl text-gray-700"><i class="fas fa-bars"></i></button>
+            <h2 id="sectionTitle" class="text-xl font-bold">Dashboard</h2>
+            <div></div>
+        </header>
+
+        <div class="p-4 md:p-6">
+
+            <!-- DASHBOARD -->
+            <section id="dashboard" class="section-content">
                 
-                <div class="p-4 border-t border-white/20">
-                    <button onclick="logout()" class="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 p-3 rounded-lg transition-all">
-                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                    </button>
-                </div>
-            </aside>
-
-            <!-- 🟢 CONTENIDO PRINCIPAL -->
-            <main class="flex-1 flex flex-col overflow-hidden bg-gray-50">
-                <header class="bg-white shadow-sm border-b p-4 flex justify-between items-center">
-                    <button id="menuToggle" class="lg:hidden text-gray-700 text-xl"><i class="fas fa-bars"></i></button>
-                    <div class="flex-1 px-4"><h2 id="sectionTitle" class="text-xl font-semibold text-dark">Dashboard</h2></div>
-                    <div class="flex items-center gap-4">
-                        <button onclick="exportarTodo()" class="bg-success hover:opacity-90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all">
-                            <i class="fas fa-file-excel"></i> Exportar Excel
-                        </button>
-                        <!-- BOTÓN DE INSTALAR APP -->
-                        <button id="installBtn" class="hidden bg-warning hover:opacity-90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all">
-                            <i class="fas fa-download"></i> Instalar App
-                        </button>
+                <!-- TARJETAS RESUMEN -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    
+                    <div class="bg-white rounded-xl p-6 shadow border-l-4 border-blue-600">
+                        <p class="text-gray-500 text-sm">Inversión Total</p>
+                        <p id="sum-expenses" class="text-3xl font-bold text-blue-700">$0</p>
                     </div>
-                </header>
 
-                <div class="flex-1 overflow-y-auto p-4 md:p-6">
+                    <div class="bg-white rounded-xl p-6 shadow border-l-4 border-green-600">
+                        <p class="text-gray-500 text-sm">Ganancia Estimada</p>
+                        <p id="sum-profit" class="text-3xl font-bold text-green-700">$0</p>
+                    </div>
 
-                    <!-- DASHBOARD -->
-                    <section id="dashboard" class="section-content">
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                            <div class="bg-white rounded-xl p-6 card-shadow">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-gray-500 text-sm">Trabajadores</p>
-                                        <h3 class="text-3xl font-bold text-primary" id="count-workers">0</h3>
-                                    </div>
-                                    <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                                        <i class="fas fa-users text-primary text-xl"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-white rounded-xl p-6 card-shadow">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-gray-500 text-sm">Proyectos</p>
-                                        <h3 class="text-3xl font-bold text-warning" id="count-projects">0</h3>
-                                    </div>
-                                    <div class="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
-                                        <i class="fas fa-hard-hat text-warning text-xl"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-white rounded-xl p-6 card-shadow">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-gray-500 text-sm">Materiales</p>
-                                        <h3 class="text-3xl font-bold text-success" id="count-materials">0</h3>
-                                    </div>
-                                    <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
-                                        <i class="fas fa-boxes text-success text-xl"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-white rounded-xl p-6 card-shadow">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-gray-500 text-sm">Gastos</p>
-                                        <h3 class="text-3xl font-bold text-danger" id="sum-expenses">$0</h3>
-                                    </div>
-                                    <div class="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
-                                        <i class="fas fa-money-bill-wave text-danger text-xl"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div class="bg-white p-6 rounded-xl card-shadow"><h3 class="font-semibold mb-4">Costos por Proyecto</h3><canvas id="chartProjects"></canvas></div>
-                            <div class="bg-white p-6 rounded-xl card-shadow"><h3 class="font-semibold mb-4">Distribución de Gastos</h3><canvas id="chartExpenses"></canvas></div>
-                        </div>
-                    </section>
+                    <div class="bg-white rounded-xl p-6 shadow border-l-4 border-orange-500">
+                        <p class="text-gray-500 text-sm">Proyectos Activos</p>
+                        <p id="count-active-projects" class="text-3xl font-bold text-orange-600">0</p>
+                    </div>
 
-                    <!-- RESTO DE LAS SECCIONES (IGUAL PERO MÁS BONITAS) -->
-                    <section id="trabajadores" class="section-content hidden">
-                        <div class="bg-white rounded-xl p-6 card-shadow mb-6">
-                            <h3 class="text-lg font-semibold mb-4 text-dark"><i class="fas fa-plus-circle text-primary"></i> Nuevo Trabajador</h3>
-                            <form id="formWorker" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <input type="text" id="wName" placeholder="Nombre Completo" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none" required>
-                                <input type="text" id="wDoc" placeholder="Documento / CI" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none" required>
-                                <input type="text" id="wContact" placeholder="Teléfono" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none">
-                                <input type="number" id="wSalary" placeholder="Salario Diario ($)" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none" required>
-                                <button type="submit" class="btn-primary text-white py-3 px-6 rounded-lg md:col-span-3">Guardar Trabajador</button>
-                            </form>
-                        </div>
-                        <div class="bg-white rounded-xl p-6 card-shadow">
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left">
-                                    <thead class="bg-gray-50 text-gray-600">
-                                        <tr><th class="p-3">Nombre</th><th class="p-3">Documento</th><th class="p-3">Salario</th><th class="p-3">Días</th><th class="p-3">Adelantos</th><th class="p-3">Total</th><th class="p-3">Acc</th></tr>
-                                    </thead>
-                                    <tbody id="tableWorkers" class="divide-y divide-gray-100"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- MATERIALES -->
-                    <section id="materiales" class="section-content hidden">
-                        <div class="bg-white rounded-xl p-6 card-shadow mb-6">
-                            <h3 class="text-lg font-semibold mb-4 text-dark"><i class="fas fa-plus-circle text-success"></i> Nuevo Material</h3>
-                            <form id="formMaterial" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <input type="text" id="mName" placeholder="Nombre" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-success/50 outline-none" required>
-                                <input type="text" id="mUnit" placeholder="Unidad" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-success/50 outline-none" required>
-                                <input type="number" id="mStock" placeholder="Stock" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-success/50 outline-none" required>
-                                <input type="number" id="mPrice" placeholder="Precio $" class="border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-success/50 outline-none" required>
-                                <button type="submit" class="bg-success hover:opacity-90 text-white py-3 px-6 rounded-lg md:col-span-4">Agregar Material</button>
-                            </form>
-                        </div>
-                        <div class="bg-white rounded-xl p-6 card-shadow">
-                            <table class="w-full text-left">
-                                <thead class="bg-gray-50"><tr><th class="p-3">Material</th><th class="p-3">Unidad</th><th class="p-3">Stock</th><th class="p-3">Precio</th><th class="p-3">Total</th></tr></thead>
-                                <tbody id="tableMaterials" class="divide-y divide-gray-100"></tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <section id="modelos" class="section-content hidden">
-                         <div class="bg-white rounded-xl p-6 card-shadow mb-6">
-                            <h3 class="text-lg font-semibold mb-4 text-dark"><i class="fas fa-home text-purple-600"></i> Crear Modelo</h3>
-                            <form id="formModel" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input type="text" id="modName" placeholder="Nombre Modelo" class="border border-gray-200 p-3 rounded-lg outline-none" required>
-                                <input type="text" id="modSize" placeholder="Tamaño / Mts2" class="border border-gray-200 p-3 rounded-lg outline-none" required>
-                                <textarea id="modDesc" placeholder="Descripción" class="border border-gray-200 p-3 rounded-lg md:col-span-2 outline-none"></textarea>
-                                <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium mb-2">Materiales necesarios:</label>
-                                    <div id="materialsCheckList" class="grid grid-cols-2 md:grid-cols-4 gap-2 border p-4 rounded-lg bg-gray-50 max-h-60 overflow-y-auto"></div>
-                                </div>
-                                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg md:col-span-2">Guardar Modelo</button>
-                            </form>
-                        </div>
-                        <div id="listModels" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
-                    </section>
-
-                    <section id="proyectos" class="section-content hidden">
-                        <div class="bg-white rounded-xl p-6 card-shadow mb-6">
-                            <h3 class="text-lg font-semibold mb-4 text-dark"><i class="fas fa-hard-hat text-warning"></i> Nuevo Proyecto</h3>
-                            <form id="formProject" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <input type="text" id="pName" placeholder="Nombre de la Obra" class="border border-gray-200 p-3 rounded-lg outline-none" required>
-                                <input type="date" id="pDateStart" class="border border-gray-200 p-3 rounded-lg outline-none" required>
-                                <select id="pModel" class="border border-gray-200 p-3 rounded-lg outline-none">
-                                    <option value="">Seleccionar Modelo</option>
-                                </select>
-                                <textarea id="pAddress" placeholder="Ubicación / Dirección" class="border border-gray-200 p-3 rounded-lg md:col-span-3 outline-none"></textarea>
-                                <button type="submit" class="bg-warning hover:opacity-90 text-white py-3 px-6 rounded-lg md:col-span-3">Iniciar Proyecto</button>
-                            </form>
-                        </div>
-                        <div id="listProjects" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-                    </section>
-
-                    <section id="gastos" class="section-content hidden">
-                        <div class="bg-white rounded-xl p-6 card-shadow mb-6">
-                            <h3 class="text-lg font-semibold mb-4 text-dark"><i class="fas fa-plus-circle text-danger"></i> Registrar Gasto</h3>
-                            <form id="formExpense" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <input type="text" id="eDesc" placeholder="Descripción" class="border border-gray-200 p-3 rounded-lg outline-none" required>
-                                <input type="number" id="eAmount" placeholder="Monto ($)" class="border border-gray-200 p-3 rounded-lg outline-none" required>
-                                <select id="eCategory" class="border border-gray-200 p-3 rounded-lg outline-none">
-                                    <option value="Materiales">Materiales</option>
-                                    <option value="Transporte">Transporte</option>
-                                    <option value="Herramientas">Herramientas</option>
-                                    <option value="Pagos">Pagos Personal</option>
-                                    <option value="Otros">Otros</option>
-                                </select>
-                                <select id="eProject" class="border border-gray-200 p-3 rounded-lg outline-none">
-                                    <option value="">General / Sin proyecto</option>
-                                </select>
-                                <button type="submit" class="bg-danger hover:opacity-90 text-white py-3 px-6 rounded-lg md:col-span-4">Registrar Gasto</button>
-                            </form>
-                        </div>
-                        <div class="bg-white rounded-xl p-6 card-shadow">
-                            <h3 class="text-lg font-semibold mb-4">Historial de Gastos</h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left">
-                                    <thead class="bg-gray-50"><tr class="text-gray-600">
-                                        <th class="p-3">Fecha</th><th class="p-3">Descripción</th><th class="p-3">Categoría</th><th class="p-3">Proyecto</th><th class="p-3">Monto</th>
-                                    </tr></thead>
-                                    <tbody id="tableExpenses" class="divide-y divide-gray-100"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section id="usuarios" class="section-content hidden">
-                        <div class="bg-white rounded-xl p-6 card-shadow mb-6">
-                            <h3 class="text-lg font-semibold mb-4 text-dark"><i class="fas fa-user-plus text-indigo-600"></i> Crear Nuevo Administrador</h3>
-                            <form id="formUser" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <input type="text" id="uName" placeholder="Nombre Completo" class="border border-gray-200 p-3 rounded-lg outline-none" required>
-                                <input type="text" id="uUser" placeholder="Nombre de Usuario" class="border border-gray-200 p-3 rounded-lg outline-none" required>
-                                <input type="password" id="uPass" placeholder="Contraseña" class="border border-gray-200 p-3 rounded-lg outline-none" required>
-                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg md:col-span-3">Crear Usuario</button>
-                            </form>
-                        </div>
-                        <div class="bg-white rounded-xl p-6 card-shadow">
-                            <h3 class="text-lg font-semibold mb-4">Lista de Administradores</h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left">
-                                    <thead class="bg-gray-50"><tr class="text-gray-600">
-                                        <th class="p-3">Nombre</th><th class="p-3">Usuario</th><th class="p-3">Acciones</th>
-                                    </tr></thead>
-                                    <tbody id="tableUsers" class="divide-y divide-gray-100"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </section>
-
+                    <div class="bg-white rounded-xl p-6 shadow border-l-4 border-purple-600">
+                        <p class="text-gray-500 text-sm">Valor en Inventario</p>
+                        <p id="sum-materials" class="text-3xl font-bold text-purple-600">$0</p>
+                    </div>
                 </div>
-            </main>
+
+                <!-- TARJETAS EXTRAS -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <p class="text-sm text-gray-500">Gasto Hoy</p>
+                        <p id="gasto-hoy" class="text-xl font-bold text-red-600">$0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <p class="text-sm text-gray-500">Gasto Mes Actual</p>
+                        <p id="gasto-mes" class="text-xl font-bold text-red-600">$0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <p class="text-sm text-gray-500">Proyecto Más Costoso</p>
+                        <p id="proyecto-mayor" class="text-xl font-bold text-gray-700">-</p>
+                    </div>
+                </div>
+
+                <!-- GRAFICOS -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="font-bold mb-4">Inversión por Proyecto</h3>
+                        <canvas id="chartProjects" height="250"></canvas>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="font-bold mb-4">Distribución de Gastos</h3>
+                        <canvas id="chartExpenses" height="250"></canvas>
+                    </div>
+                </div>
+
+                <!-- ALERTAS -->
+                <div id="alertas-container" class="mt-6">
+                    <h3 class="font-bold mb-2"><i class="fas fa-triangle-exclamation text-yellow-500"></i> Alertas del Sistema</h3>
+                    <div id="alertas-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+
+            </section>
+
+            <!-- TRABAJADORES -->
+            <section id="trabajadores" class="section-content hidden">
+                <div class="bg-white rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-4">Gestión de Personal</h3>
+                    <form id="formWorker" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input type="text" id="wName" placeholder="Nombre Completo" class="border p-3 rounded-lg" required>
+                        <input type="text" id="wContact" placeholder="Contacto / Teléfono" class="border p-3 rounded-lg">
+                        <input type="number" id="wSalary" placeholder="Sueldo Diario $" class="border p-3 rounded-lg" required>
+                        <button type="submit" class="bg-blue-600 text-white py-3 rounded-lg">Guardar Trabajador</button>
+                    </form>
+                </div>
+
+                <!-- TOTAL GENERAL -->
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex justify-between items-center">
+                    <span class="text-xl font-bold text-green-800"> TOTAL A PAGAR EN NÓMINA:</span>
+                    <span id="total-nomina" class="text-2xl font-bold text-green-700">$0</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="w-full min-w-[700px] text-left">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="p-3">Nombre</th>
+                                <th class="p-3 text-right">Sueldo Día</th>
+                                <th class="p-3 text-center">Días</th>
+                                <th class="p-3 text-center">Adelantos</th>
+                                <th class="p-3 text-right">Total a Cobrar</th>
+                                <th class="p-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableWorkers" class="divide-y"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- MATERIALES -->
+            <section id="materiales" class="section-content hidden">
+                <div class="bg-white rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-4">Inventario</h3>
+                    <form id="formMaterial" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <input type="text" id="mName" placeholder="Nombre Material" class="border p-3 rounded-lg" required>
+                        <input type="number" id="mStock" placeholder="Cantidad" class="border p-3 rounded-lg" required>
+                        <input type="number" id="mPrice" placeholder="Precio Unitario $" class="border p-3 rounded-lg" required>
+                        <button type="submit" class="bg-green-600 text-white py-3 rounded-lg">Agregar</button>
+                    </form>
+                </div>
+
+                <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6 flex justify-between items-center">
+                    <span class="text-xl font-bold text-purple-800"> VALOR TOTAL DEL INVENTARIO:</span>
+                    <span id="total-inventario" class="text-2xl font-bold text-purple-700">$0</span>
+                </div>
+
+                <div class="bg-white rounded-xl overflow-hidden shadow">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="p-3">Material</th>
+                                <th class="p-3 text-center">Stock</th>
+                                <th class="p-3 text-right">Precio Unit.</th>
+                                <th class="p-3 text-right bg-green-50">Total Valorado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableMaterials" class="divide-y"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- MODELOS / PLANTILLAS -->
+            <section id="modelos" class="section-content hidden">
+                 <div class="bg-white rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-4"> Nueva Plantilla de Construcción</h3>
+                    <form id="formModel" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="hidden" id="modId" value="">
+                        <input type="text" id="modName" placeholder="Nombre Modelo (Ej: 6x9 Premium)" class="border p-3 rounded-lg" required>
+                        <input type="text" id="modSize" placeholder="Metros Cuadrados" class="border p-3 rounded-lg" required>
+                        <input type="number" id="modDays" placeholder="Días estimados de construcción" class="border p-3 rounded-lg" required>
+                        <textarea id="modDesc" placeholder="Descripción / Detalles" class="border p-3 rounded-lg md:col-span-2"></textarea>                                           
+
+                        <div class="md:col-span-2">
+    <label class="block font-medium mb-2">📋 Materiales necesarios:</label>
+    <div id="materialsCheckList" class="grid grid-cols-1 md:grid-cols-2 gap-3 border p-4 rounded-lg bg-gray-50 max-h-60 overflow-y-auto">
+        <!-- Aquí se cargan automáticamente los materiales -->
+    </div>
+</div>
+
+
+                        <button type="submit" class="bg-purple-600 text-white py-3 rounded-lg md:col-span-2">Guardar Plantilla</button>
+                    </form>
+                </div>
+                <div id="listModels" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+            </section>
+
+            <!-- PROYECTOS -->
+            <section id="proyectos" class="section-content hidden">
+                <div class="bg-white rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-4"> Nuevo Proyecto</h3>
+                    <form id="formProject" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input type="text" id="pName" placeholder="Nombre de la Obra" class="border p-3 rounded-lg" required>
+                        <div class="relative">
+                           <input type="date" id="pDateStart" class="border p-3 rounded-lg w-full" required onchange="this.dataset.date=this.value">
+                           <span id="datePlaceholder" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">Fecha de Inicio</span>
+                        </div>
+                        <select id="pModel" class="border p-3 rounded-lg" onchange="calcularCostoEstimado()">
+                            <option value="">Seleccionar Plantilla</option>
+                        </select>
+                        <input type="text" id="pLocation" placeholder="Ubicación / Barrio" class="border p-3 rounded-lg">
+                        <input type="number" id="pSalePrice" placeholder="Precio de Venta $" class="border p-3 rounded-lg">
+                        <select id="pStatus" class="border p-3 rounded-lg">
+                            <option value="Pendiente"> Pendiente</option>
+                            <option value="Construccion"> En Construcción</option>
+                            <option value="Finalizado"> Finalizado</option>
+                            <option value="Entregado"> Entregado</option>
+                        </select>
+                        
+                        <!-- RESUMEN COSTOS -->
+                        <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 bg-blue-50 p-4 rounded-lg">
+                            <div>
+                                <p class="text-sm text-gray-600">Costo Estimado (Material + MO)</p>
+                                <p id="estimatedCost" class="text-xl font-bold text-blue-700">$0</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Duración Estimada</p>
+                                <p id="estimatedDays" class="text-xl font-bold text-gray-700">-</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Ganancia Estimada</p>
+                                <p id="estimatedProfit" class="text-xl font-bold text-green-700">$0</p>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-lg md:col-span-3">Crear Proyecto</button>
+                    </form>
+                </div>
+
+                <div id="listProjects" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </section>
+
+            <!-- GASTOS -->
+            <section id="gastos" class="section-content hidden">
+                <div class="bg-white rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-4"> Registrar Gasto</h3>
+                    <form id="formExpense" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <input type="text" id="eDesc" placeholder="Descripción" class="border p-3 rounded-lg" required>
+                        <input type="number" id="eAmount" placeholder="Monto $" class="border p-3 rounded-lg" required>
+                        <select id="eCategory" class="border p-3 rounded-lg">
+                            <option value="Materiales"> Materiales</option>
+                            <option value="ManoObra"> Mano de Obra</option>
+                            <option value="Transporte"> Transporte</option>
+                            <option value="Herramientas"> Herramientas</option>
+                            <option value="Imprevistos"> Imprevistos</option>
+                            <option value="Otros"> Otros</option>
+                        </select>
+                        <select id="eProject" class="border p-3 rounded-lg">
+                            <option value="">General / Sin proyecto</option>
+                        </select>
+                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg md:col-span-4">Registrar Gasto</button>
+                    </form>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow">
+                    <h3 class="text-lg font-semibold mb-4">Historial de Gastos</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50"><tr class="text-gray-600">
+                                <th class="p-3">Fecha</th><th class="p-3">Descripción</th><th class="p-3">Tipo</th><th class="p-3">Proyecto</th><th class="p-3 text-right">Monto</th>
+                            </tr></thead>
+                            <tbody id="tableExpenses" class="divide-y"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- USUARIOS -->
+            <section id="usuarios" class="section-content hidden">
+    <div class="bg-white rounded-xl p-6 shadow">
+        <h3 class="text-lg font-semibold mb-4">👤 Gestión de Usuarios</h3>
+                    <button onclick="openNewUser()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                <i class="fas fa-plus"></i> Nuevo Usuario
+            </button>
+        <p class="text-gray-500 mb-4">Aquí puedes administrar los accesos al sistema.</p>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-100 text-left">
+                        <th class="p-3">Nombre</th>
+                        <th class="p-3">Usuario</th>
+                        <th class="p-3">Rol</th>
+                        <th class="p-3 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tableUsers">
+                    <!-- Aquí aparecerán los usuarios -->
+                </tbody>
+            </table>
         </div>
     </div>
+</section>
 
-    <!-- MODAL MEJORADO -->
-    <div id="detailModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto card-shadow">
-            <div class="p-6 border-b flex justify-between items-center">
-                <h3 id="modalTitle" class="text-xl font-bold text-dark">Detalles del Proyecto</h3>
-                <button onclick="closeModal()" class="text-gray-500 text-xl hover:text-dark"><i class="fas fa-times"></i></button>
-            </div>
-            <div id="modalBody" class="p-6"></div>
+        </div>
+    </main>
+</div>
+
+<!-- MODAL -->
+<div id="detailModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 id="modalTitle" class="text-xl font-bold">Detalles</h3>
+            <button onclick="closeModal()" class="text-gray-500 text-xl"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="modalBody" class="p-6"></div>
+    </div>
+</div>
+
+<!-- TOAST NOTIFICATION -->
+<div id="toast" class="fixed top-4 right-4 z-50 transform translate-x-full transition-all duration-300">
+    <div id="toastContent" class="bg-white text-gray-800 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 border-l-4 border-green-500">
+        <i id="toastIcon" class="fas fa-check-circle text-green-500 text-xl"></i>
+        <div>
+            <p id="toastTitle" class="font-bold">Operación Exitosa</p>
+            <p id="toastText" class="text-sm text-gray-500">Guardado correctamente</p>
         </div>
     </div>
+</div>
 
-    <script>
-        // ===== CONFIGURACIÓN SUPABASE =====
-const SUPABASE_URL = "https://kzjsymmvjwqiwefeuvmq.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6anN5bW12andxaXdlZmV1dm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMDczNTUsImV4cCI6MjA5MjY4MzM1NX0.cyu3elvy1rq7B97X4u0q57qkI9c0ZEfVXXNOinzeWdY";
+<script>
+    // ==== CONFIGURACIÓN ====
+    const SUPABASE_URL = "https://kzjsymmvjwqiwefeuvmq.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6anN5bW12andxaXdlZmV1dm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMDczNTUsImV4cCI6MjA5MjY4MzM1NX0.cyu3elvy1rq7B97X4u0q57qkI9c0ZEfVXXNOinzeWdY";
 
-async function saveData() {
-    try {
-        // 1. Guardar local
-        localStorage.setItem('cabanasDB', JSON.stringify(db));
+    const defaultDB = {
+        users: [ { id: 1, name: "Administrador", username: "admin", password: "1234" } ],
+        workers: [], materials: [], models: [], projects: [], expenses: []
+    };
 
-        // 2. BORRAMOS TODO LO ANTERIOR
-        await fetch(`${SUPABASE_URL}/rest/v1/data`, {
-            method: 'DELETE',
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json'
-            }
-        });
+    let db = JSON.parse(JSON.stringify(defaultDB));
+    let currentUser = null;
+    let charts = {};
+    let editingWorkerId = null;
 
-        // Pequeña pausa
-        await new Promise(resolve => setTimeout(resolve, 300));
+    // ==== TOAST NOTIFICACIONES ====
+    function showToast(type, title, text) {
+        const toast = document.getElementById('toast');
+        const content = document.getElementById('toastContent');
+        const icon = document.getElementById('toastIcon');
+        document.getElementById('toastTitle').textContent = title;
+        document.getElementById('toastText').textContent = text;
 
-        // 3. GUARDAMOS LOS DATOS NUEVOS
-        await fetch(`${SUPABASE_URL}/rest/v1/data`, {
-            method: 'POST',
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify({
-                content: JSON.stringify(db)
-            })
-        });
-
-        console.log("✅ GUARDADO PERFECTO EN SUPABASE");
-
-    } catch (error) {
-        console.error("❌ Error:", error);
-    }
-}
-
-async function loadData() {
-    try {
-        document.getElementById('loadingScreen').classList.remove('hidden');
-        
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/data?select=content`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            }
-        });
-
-        const data = await response.json();
-        
-        if(data && data.length > 0) {
-            // Tomamos el ultimo registro
-            const last = data.pop();
-            if(last.content) {
-                db = JSON.parse(last.content);
-            }
+        if(type === 'success') {
+            content.className = "bg-white text-gray-800 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 border-l-4 border-green-500";
+            icon.className = "fas fa-check-circle text-green-500 text-xl";
+        } else {
+            content.className = "bg-white text-gray-800 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 border-l-4 border-red-500";
+            icon.className = "fas fa-exclamation-circle text-red-500 text-xl";
         }
 
-        // Si no hay admin, lo creamos
-        if(!db.users.some(u=>u.username==="admin")) { 
-            db.users.unshift(...defaultDB.users); 
-            await saveData();
-        }
-        
-    } catch (error) {
-        console.error("Cargando desde local...", error);
-        const saved = localStorage.getItem('cabanasDB');
-        if(saved) db = { ...db, ...JSON.parse(saved) };
-    } finally {
-        document.getElementById('loadingScreen').classList.add('hidden');
-        document.getElementById('loginScreen').classList.remove('hidden');
-        renderAll();
+        toast.classList.remove('translate-x-full');
+        setTimeout(() => toast.classList.add('translate-x-full'), 3000);
     }
-}
 
+    // ==== GUARDAR Y CARGAR ====
+    async function saveData() {
+        try {
+            localStorage.setItem('cabanasDB', JSON.stringify(db));
+            await fetch(`${SUPABASE_URL}/rest/v1/data`, { method: 'DELETE', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }});
+            await new Promise(r=>setTimeout(r,200));
+            await fetch(`${SUPABASE_URL}/rest/v1/data`, {
+                method: 'POST',
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: JSON.stringify(db) })
+            });
+        } catch(e) { console.error(e); }
+    }
 
-        // ===== CÓDIGO PARA INSTALAR COMO APP (OPCIÓN 2) =====
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installBtn').classList.remove('hidden');
-        });
-
-        document.getElementById('installBtn').addEventListener('click', async () => {
-            if(deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if(outcome === 'accepted') console.log('App instalada');
-                deferredPrompt = null;
-                document.getElementById('installBtn').classList.add('hidden');
-            }
-        });
-
-        // ===== LOGIN Y NAVEGACIÓN =====
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const user = db.users.find(u => u.username === document.getElementById('loginUser').value && u.password === document.getElementById('loginPass').value);
-            if(user) {
-                currentUser = user;
+    async function loadData() {
+        try {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/data?select=content`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }});
+            const data = await res.json();
+            if(data.length) db = JSON.parse(data.pop().content);
+        } catch(e) {
+            const saved = localStorage.getItem('cabanasDB');
+            if(saved) db = { ...db, ...JSON.parse(saved) };
+        } finally {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            // Verificar sesión al cargar
+            if(localStorage.getItem('sesionActiva') === 'true') {
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('mainApp').classList.remove('hidden');
-                document.getElementById('userLogged').textContent = `Usuario: ${user.username}`;
             } else {
-                document.getElementById('loginError').classList.remove('hidden');
-                setTimeout(()=>document.getElementById('loginError').classList.add('hidden'), 3000);
+                document.getElementById('loginScreen').classList.remove('hidden');
             }
-        });
+            renderAll();
+        }
+    }
 
-        function logout() {
-            currentUser = null;
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('mainApp').classList.add('hidden');
+    function deleteProject(id) {
+    if(confirm("⚠️ ¿Estás seguro de eliminar este proyecto?\nSe borrarán también sus gastos asociados.")) {
+        // Borrar el proyecto
+        db.projects = db.projects.filter(x => x.id !== id);
+        
+        // Borrar también los gastos que pertenecían a este proyecto
+        db.expenses = db.expenses.filter(e => e.projectId != id);
+        
+        saveData();
+        renderProjects();
+        updateCounts();
+        renderCharts();
+        updateExpenseProjects(); // Actualizar lista en gastos
+        
+        showToast('success', 'Eliminado', 'Proyecto borrado correctamente');
+    }
+}
+
+
+
+
+     // ==== RENDERIZADO TRABAJADORES ====
+    document.getElementById('formWorker').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('wName').value;
+        const contact = document.getElementById('wContact').value;
+        const salary = parseFloat(document.getElementById('wSalary').value);
+
+        if(editingWorkerId) {
+            const w = db.workers.find(x => x.id === editingWorkerId);
+            if(w) { w.name = name; w.contact = contact; w.salaryDay = salary; }
+            editingWorkerId = null;
+            document.querySelector('#formWorker button').textContent = 'Guardar Trabajador';
+        } else {
+            db.workers.push({ id: Date.now(), name: name, contact: contact, salaryDay: salary, daysWorked: 0, advances: 0 });
         }
 
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const section = link.dataset.section;
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('bg-white/20'));
-                link.classList.add('bg-white/20');
-                document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
-                document.getElementById(section).classList.remove('hidden');
-                document.getElementById('sectionTitle').textContent = link.textContent.trim();
-                if(window.innerWidth < 1024) document.getElementById('sidebar').classList.toggle('-translate-x-full');
-            });
+        await saveData(); renderWorkers(); updateCounts(); e.target.reset();
+        showToast('success', ' Listo', 'Trabajador guardado');
+    });
+
+    function renderWorkers() {
+    let totalNomina = 0;
+    document.getElementById('tableWorkers').innerHTML = db.workers.map(w => {
+        const total = (w.daysWorked * w.salaryDay) - w.advances;
+        totalNomina += total;
+        return `
+        <tr class="hover:bg-blue-50">
+            <td class="p-3">${w.name}<br><small>${w.contact || ''}</small></td>
+            <td class="p-3 text-right">$${w.salaryDay.toLocaleString()}</td>
+            <td class="p-3 text-center">
+                <div class="flex justify-center gap-2">
+                    <button onclick="changeDays(${w.id},-1)" class="w-7 h-7 bg-gray-200 rounded">-</button>
+                    <span class="font-bold">${w.daysWorked}</span>
+                    <button onclick="changeDays(${w.id},1)" class="w-7 h-7 bg-gray-200 rounded">+</button>
+                </div>
+            </td>
+            <td class="p-3 text-center">
+                <input type="number" 
+                       id="adv_${w.id}" 
+                       value="${w.advances || 0}" 
+                       class="w-20 p-1 border rounded text-center"
+                       onkeypress="if(event.key === 'Enter') saveAdvance(${w.id})">
+                <button onclick="saveAdvance(${w.id})" class="ml-1 text-green-600">
+                    <i class="fas fa-check"></i>
+                </button>
+            </td>
+            <td class="p-3 text-right font-bold text-green-700">$${total.toLocaleString()}</td>
+            <td class="p-3 text-center">
+                <button onclick="editWorker(${w.id})" class="text-blue-600 mr-2"><i class="fas fa-pencil"></i></button>
+                <button onclick="pagarTrabajador(${w.id})" class="text-green-600 mr-2"><i class="fas fa-money-bill"></i></button>
+                <button onclick="resetDias(${w.id})" class="text-orange-600"><i class="fas fa-rotate-right"></i></button>
+            </td>
+        </tr>`;
+    }).join('');
+    document.getElementById('total-nomina').textContent = '$' + totalNomina.toLocaleString();
+}
+
+
+    function editWorker(id) {
+        const w = db.workers.find(x => x.id === id);
+        if(w) {
+            editingWorkerId = id;
+            document.getElementById('wName').value = w.name;
+            document.getElementById('wContact').value = w.contact || '';
+            document.getElementById('wSalary').value = w.salaryDay;
+            document.querySelector('#formWorker button').textContent = ' Guardar Cambios';
+        }
+    }
+
+    function pagarTrabajador(id) {
+    const w = db.workers.find(x => x.id === id);
+    if (!w) return;
+
+    const totalAPagar = (w.daysWorked * w.salaryDay) - (w.advances || 0);
+
+    if (totalAPagar <= 0) {
+        showToast('info', 'Sin deuda', 'No hay saldo pendiente para pagar');
+        return;
+    }
+
+    if (confirm(`¿Pagar total a ${w.name}?\nTotal: $${totalAPagar.toLocaleString()}`)) {
+        
+        // ✅ REGISTRAR EN GASTOS
+        db.expenses.push({
+            id: Date.now(),
+            date: new Date().toISOString().split('T')[0],
+            description: `Pago de nómina: ${w.name}`,
+            amount: totalAPagar,
+            category: "ManoObra",
+            projectId: null
         });
 
-        // ===== FUNCIONES DEL SISTEMA =====
-        document.getElementById('formWorker').addEventListener('submit', (e) => {
-            e.preventDefault();
-            db.workers.push({id:Date.now(), name:document.getElementById('wName').value, doc:document.getElementById('wDoc').value, contact:document.getElementById('wContact').value, salaryDay:parseFloat(document.getElementById('wSalary').value), daysWorked:0, advances:0});
-            saveData(); renderWorkers(); updateCounts(); e.target.reset();
-        });
-        function renderWorkers() {
-            document.getElementById('tableWorkers').innerHTML = db.workers.map(w => `
-            <tr class="hover:bg-gray-50"><td class="p-3">${w.name}</td><td class="p-3">${w.doc}</td><td class="p-3">$${w.salaryDay}</td>
-            <td class="p-3"><button onclick="changeDays(${w.id},-1)" class="px-2 bg-gray-200 rounded">-</button> ${w.daysWorked} <button onclick="changeDays(${w.id},1)" class="px-2 bg-gray-200 rounded">+</button></td>
-            <td class="p-3"><button onclick="addAdvance(${w.id})" class="text-primary underline">$${w.advances}</button></td><td class="p-3 text-success font-bold">$${(w.daysWorked*w.salaryDay)-w.advances}</td></tr>`).join('');
-        }
-        function changeDays(id, amt){ const w=db.workers.find(x=>x.id==id); w.daysWorked=Math.max(0,w.daysWorked+amt); saveData(); renderWorkers(); }
-        function addAdvance(id){ const w=db.workers.find(x=>x.id==id); const v=parseFloat(prompt('Monto:')); if(v) { w.advances+=v; saveData(); renderWorkers(); }}
+        // Reiniciar contadores
+        w.daysWorked = 0;
+        w.advances = 0;
 
-        document.getElementById('formMaterial').addEventListener('submit', (e) => {
-            e.preventDefault();
-            db.materials.push({id:Date.now(), name:document.getElementById('mName').value, unit:document.getElementById('mUnit').value, stock:parseFloat(document.getElementById('mStock').value), price:parseFloat(document.getElementById('mPrice').value)});
-            saveData(); renderMaterials(); updateMaterialChecks(); updateCounts(); e.target.reset();
-        });
-        function renderMaterials(){
-            document.getElementById('tableMaterials').innerHTML = db.materials.map(m => `
-            <tr class="hover:bg-gray-50">
-                <td class="p-3">${m.name}</td><td class="p-3">${m.unit}</td><td class="p-3">${m.stock}</td>
-                <td class="p-3">$${m.price}</td><td class="p-3 font-bold text-success">$${m.stock * m.price}</td>
-            </tr>`).join('');
-        }
-        function updateMaterialChecks(){
-            document.getElementById('materialsCheckList').innerHTML = db.materials.map(m => 
-                `<label class="p-2 border rounded bg-white"><input type="checkbox" value="${m.id}" class="mat-check"> ${m.name}</label>`
-            ).join('');
-        }
+        saveData();
+        renderWorkers();
+        renderExpenses();   // Actualizar lista de gastos
+        updateCounts();     // Actualizar Dashboard
+        renderCharts();     // Actualizar gráficos
 
-        document.getElementById('formModel').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const sel = Array.from(document.querySelectorAll('.mat-check:checked')).map(el=>parseFloat(el.value));
-            db.models.push({id:Date.now(), name:document.getElementById('modName').value, size:document.getElementById('modSize').value, desc:document.getElementById('modDesc').value, materialsIds:sel});
-            saveData(); renderModels(); updateProjectModels(); e.target.reset();
-        });
-        function renderModels(){
-            document.getElementById('listModels').innerHTML = db.models.map(mod => {
-                const mats = mod.materialsIds.map(id => db.materials.find(x=>x.id==id)?.name || '').join(', ');
-                return `
-                <div class="bg-white rounded-xl p-6 card-shadow">
-                    <h4 class="font-bold text-lg text-dark">${mod.name}</h4>
-                    <p class="text-gray-500">${mod.size}</p>
-                    <p class="text-sm mt-2">${mod.desc}</p>
-                    <div class="mt-4 pt-4 border-t">
-                        <p class="text-xs text-gray-500">Materiales:</p>
-                        <p class="text-sm">${mats || 'Ninguno'}</p>
-                    </div>
-                </div>`;
-            }).join('');
-        }
+        showToast('success', '✅ Pagado', `Se registraron $${totalAPagar.toLocaleString()} en gastos`);
+    }
+}
 
-        // ===== PROYECTOS =====
-        function updateProjectModels(){
-            document.getElementById('pModel').innerHTML = '<option value="">Seleccionar Modelo</option>' + db.models.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+    function resetDias(id) {
+        const w = db.workers.find(x => x.id === id);
+        w.daysWorked = 0; w.advances = 0;
+        saveData(); renderWorkers();
+    }
+
+    function changeDays(id, amt){ 
+        const w=db.workers.find(x=>x.id==id); 
+        w.daysWorked=Math.max(0,w.daysWorked+amt); 
+        saveData(); renderWorkers(); 
+    }
+    
+    function saveAdvance(id) {
+        const w = db.workers.find(x => x.id === id);
+        const inputValor = parseFloat(document.getElementById(`adv_${id}`).value);
+        
+        if(!isNaN(inputValor) && inputValor >= 0) {
+            w.advances = inputValor;
+            saveData();
+            renderWorkers();
+            showToast('success', 'Adelanto Registrado', `Se guardó $${inputValor.toLocaleString()} para ${w.name}`);
+        } else {
+            document.getElementById(`adv_${id}`).value = w.advances || 0;
         }
-        document.getElementById('formProject').addEventListener('submit', (e) => {
-            e.preventDefault();
-            db.projects.push({id:Date.now(), name:document.getElementById('pName').value, dateStart:document.getElementById('pDateStart').value, modelId:parseInt(document.getElementById('pModel').value), address:document.getElementById('pAddress').value, status:'En construcción', progress:0});
-            saveData(); renderProjects(); updateExpenseProjects(); updateCounts(); e.target.reset();
+    }
+
+    // ==== MATERIALES ====
+    document.getElementById('formMaterial').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        db.materials.push({
+            id:Date.now(),
+            name: document.getElementById('mName').value,
+            stock: parseFloat(document.getElementById('mStock').value),
+            price: parseFloat(document.getElementById('mPrice').value)
         });
-        function renderProjects(){
-            document.getElementById('listProjects').innerHTML = db.projects.map(p => {
-                const model = db.models.find(m=>m.id==p.modelId);
-                return `
-                <div class="bg-white rounded-xl p-6 card-shadow">
+        await saveData(); renderMaterials(); updateCounts(); e.target.reset();
+        showToast('success', 'Material Agregado', 'Inventario actualizado');
+    });
+
+    function renderMaterials(){
+    let totalInv = 0;
+    document.getElementById('tableMaterials').innerHTML = db.materials.map(m => {
+        const totalMat = m.stock * m.price;
+        totalInv += totalMat
+        return `
+        <tr class="hover:bg-green-50">
+            <td class="p-3 font-medium">${m.name}</td>
+            <td class="p-3 text-center">${m.stock} u.</td>
+            <td class="p-3 text-right">$${m.price.toLocaleString()}</td>
+            <td class="p-3 text-right font-bold text-green-700">$${totalMat.toLocaleString()}</td>
+            <td class="p-3 text-center">
+                <button onclick="usarMaterial(${m.id})" class="text-blue-600 mr-2" title="Pasar a Gasto">
+                    <i class="fas fa-truck-loading"></i>
+                </button>
+                <button onclick="editMaterial(${m.id})" class="text-orange-600 mr-2">
+                    <i class="fas fa-pencil"></i>
+                </button>
+                <button onclick="deleteMaterial(${m.id})" class="text-red-600">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+    document.getElementById('total-inventario').textContent = '$' + totalInv.toLocaleString();
+}
+
+    // ==== MODELOS / PLANTILLAS ====
+    document.getElementById('formModel').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const selected = [];
+    const listDetails = [];
+    let hayError = false; // Bandera para saber si hubo error
+    
+    document.querySelectorAll('.mat-check:checked').forEach(check => {
+        const id = parseFloat(check.value);
+        const qty = parseFloat(document.getElementById(`qty_${id}`).value);
+        const mat = db.materials.find(m => m.id === id);
+        
+        if(mat) {
+            // ✅ NUEVA VALIDACIÓN DE STOCK
+            if(qty > mat.stock) {
+                hayError = true;
+                showToast('error', 'Stock Insuficiente', 
+                    `${mat.name}: Tienes ${mat.stock} u. e intentas poner ${qty} u.`);
+            } else if (!isNaN(qty) && qty > 0) {
+                selected.push(id);
+                listDetails.push(`• ${mat.name}: ${qty} u.`);
+            }
+        }
+    });
+
+    // Si hubo error, NO guardamos
+    if(hayError) {
+        return; // Cortamos la ejecución aquí
+    }
+
+    const listText = listDetails.join('\n');
+
+        // ✅ NUEVA LÓGICA DE GUARDADO
+    const dataModel = {
+        name: document.getElementById('modName').value,
+        size: document.getElementById('modSize').value,
+        estimatedDays: parseInt(document.getElementById('modDays').value),
+        desc: document.getElementById('modDesc').value,
+        materialsIds: selected,
+        materialsList: listDetails
+    };
+
+    const idEdicion = parseInt(document.getElementById('modId').value);
+
+    if(idEdicion) {
+        // ✅ SI ES EDICIÓN: ACTUALIZAR
+        const index = db.models.findIndex(m => m.id === idEdicion);
+        db.models[index] = { ...db.models[index], ...dataModel };
+        
+        showToast('success', 'Plantilla Actualizada', 'Cambios guardados');
+        document.getElementById('modId').value = ''; // Limpiar ID
+        document.getElementById('formModel').querySelector('h3').textContent = '➕ Nueva Plantilla';
+    } else {
+        // ✅ SI ES NUEVA: CREAR
+        db.models.push({ id: Date.now(), ...dataModel });
+        showToast('success', 'Plantilla Creada', 'Listo para usar');
+    }
+
+    await saveData(); renderModels(); updateProjectModels(); e.target.reset();
+    showToast('success', 'Plantilla Creada', 'Listo para usar');
+});
+
+
+    function renderModels(){
+    document.getElementById('listModels').innerHTML = db.models.map(m => {
+        return `
+        <div class="bg-white p-4 rounded-xl shadow">
+            <h4 class="font-bold text-lg">${m.name}</h4>
+            <p class="text-sm text-gray-500">${m.size} | ${m.estimatedDays} días</p>
+            <p class="text-sm mt-2 text-gray-600">${m.desc || 'Sin descripción'}</p>
+            
+            <div class="mt-3 border-t pt-3">
+                <p class="text-sm font-medium mb-2">Materiales:</p>
+                <div class="flex flex-wrap gap-1">
+                    ${m.materialsIds.map(id => {
+                        const mat = db.materials.find(x => x.id == id);
+                        return mat ? `<span class="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded">${mat.name}</span>` : '';
+                    }).join('')}
+                </div>
+            </div>
+            
+            <!-- 👇 AQUÍ LOS BOTONES 👇 -->
+            <div class="mt-4 flex gap-2">
+                <button onclick="openEditModel(${m.id})" 
+                        class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button onclick="deleteModel(${m.id})" 
+                        class="bg-red-100 text-red-700 px-3 py-1 rounded text-sm">
+                    <i class="fas fa-trash"></i> Borrar
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+    function updateProjectModels(){
+        document.getElementById('pModel').innerHTML = '<option value="">Seleccionar Plantilla</option>' + db.models.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+    }
+
+function openEditModel(id) {
+    const model = db.models.find(m => m.id === id);
+    if(!model) return;
+
+    // Cargar datos en el formulario
+    document.getElementById('modId').value = model.id; // Campo oculto para saber que es edición
+    document.getElementById('modName').value = model.name;
+    document.getElementById('modSize').value = model.size;
+    document.getElementById('modDays').value = model.estimatedDays;
+    document.getElementById('modDesc').value = model.desc || '';
+
+    // Marcar los materiales que ya estaban seleccionados
+    document.querySelectorAll('.mat-check').forEach(check => {
+        check.checked = model.materialsIds.includes(parseInt(check.value));
+        const input = document.getElementById(`qty_${check.value}`);
+        input.disabled = !check.checked;
+        if(!check.checked) input.value = '';
+    });
+
+    // Cambiar el título del formulario
+    document.getElementById('formModel').querySelector('h3').textContent = '✏️ Editar Plantilla';
+    
+    // Ir arriba del formulario
+    document.getElementById('formModel').scrollIntoView({behavior: 'smooth'});
+}
+  
+    // ==== PROYECTOS ====
+   document.getElementById('formProject').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const modelId = parseInt(document.getElementById('pModel').value);
+    const model = db.models.find(m => m.id === modelId);
+    
+    let costoCalculado = 0;
+    if(model) {
+        costoCalculado = model.materialsIds.reduce((s,id) => {
+            const m = db.materials.find(x=>x.id==id); 
+            return s + (m?.price || 0);
+        }, 0);
+    }
+    const precioVenta = parseFloat(document.getElementById('pSalePrice').value) || 0;
+
+    db.projects.push({
+        id: Date.now(),
+        name: document.getElementById('pName').value,
+        location: document.getElementById('pLocation').value,
+        dateStart: document.getElementById('pDateStart').value,
+        modelId: modelId,
+        salePrice: precioVenta,
+        status: document.getElementById('pStatus').value,
+        progress: 0,
+        estimatedCost: costoCalculado,
+        estimatedProfit: precioVenta - costoCalculado
+    });
+
+    await saveData(); 
+    renderProjects(); 
+    updateExpenseProjects();
+    
+    // ✅ IMPORTANTE: ACTUALIZAR DASHBOARD
+    updateCounts();
+    renderCharts();
+
+    e.target.reset();
+    document.getElementById('estimatedCost').textContent = '$0';
+    document.getElementById('estimatedDays').textContent = '-';
+    document.getElementById('estimatedProfit').textContent = '$0';
+    showToast('success', 'Proyecto Creado', 'Obra registrada');
+});
+
+    function renderProjects(){
+        document.getElementById('listProjects').innerHTML = db.projects.map(p => {
+            const gastado = db.expenses.filter(e=>e.projectId==p.id).reduce((s,e)=>s+e.amount,0);
+            const ganancia = p.salePrice - gastado;
+            return `
+            <div class="bg-white rounded-xl p-6 shadow">
+                <div class="flex justify-between items-start">
                     <h4 class="font-bold text-lg">${p.name}</h4>
-                    <p class="text-gray-500 text-sm">Modelo: ${model ? model.name : 'General'}</p>
-                    <p class="text-xs mt-1">${p.address}</p>
-                    <div class="mt-4">
-                        <p class="text-sm mb-2">Avance: <strong>${p.progress}%</strong></p>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-primary h-2 rounded-full transition-all" style="width: ${p.progress}%"></div>
-                        </div>
-                    </div>
-                    <button onclick="openProjectDetails(${p.id})" class="mt-4 w-full btn-primary text-white py-2 rounded">Ver Detalles</button>
-                </div>`;
-            }).join('');
-        }
-        function openProjectDetails(id){
-            const p = db.projects.find(x=>x.id==id);
-            document.getElementById('modalTitle').textContent = p.name;
-            document.getElementById('modalBody').innerHTML = `
-            <label class="block mb-2">Ajustar avance:</label>
-            <input type="range" min="0" max="100" value="${p.progress}" onchange="updateProgress(${id}, this.value)" class="w-full">
-            <p class="text-center text-3xl font-bold text-primary mt-2">${p.progress}%</p>`;
-            document.getElementById('detailModal').classList.remove('hidden');
-        }
-        function closeModal(){ document.getElementById('detailModal').classList.add('hidden'); }
-        function updateProgress(id, val){ const p=db.projects.find(x=>x.id==id); p.progress=val; saveData(); renderProjects(); renderCharts(); }
-
-        // ===== GASTOS =====
-        function updateExpenseProjects(){
-            document.getElementById('eProject').innerHTML = '<option value="">General / Sin proyecto</option>' + db.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-        }
-        document.getElementById('formExpense').addEventListener('submit', (e) => {
-            e.preventDefault();
-            db.expenses.push({id:Date.now(), date:new Date().toLocaleDateString(), description:document.getElementById('eDesc').value, amount:parseFloat(document.getElementById('eAmount').value), category:document.getElementById('eCategory').value, projectId:document.getElementById('eProject').value || null});
-            saveData(); renderExpenses(); renderCharts(); updateCounts(); e.target.reset();
-        });
-        function renderExpenses() {
-            document.getElementById('tableExpenses').innerHTML = db.expenses.map(e => {
-                const projName = e.projectId ? (db.projects.find(p => p.id == e.projectId)?.name || 'General') : 'General';
-                return `
-                <tr class="hover:bg-gray-50">
-                    <td class="p-3">${e.date}</td><td class="p-3">${e.description}</td><td class="p-3">${e.category}</td>
-                    <td class="p-3">${projName}</td><td class="p-3 font-bold text-danger">$${e.amount}</td>
-                </tr>`;
-            }).join('');
-        }
-
-        // ===== USUARIOS =====
-        document.getElementById('formUser').addEventListener('submit', (e) => {
-            e.preventDefault();
-            db.users.push({id:Date.now(), name:document.getElementById('uName').value, username:document.getElementById('uUser').value, password:document.getElementById('uPass').value});
-            saveData(); renderUsers(); e.target.reset(); alert('✅ Usuario creado correctamente');
-        });
-        function renderUsers() {
-            document.getElementById('tableUsers').innerHTML = db.users.map(u => `
-                <tr class="hover:bg-gray-50">
-                    <td class="p-3">${u.name}</td><td class="p-3">${u.username}</td>
-                    <td class="p-3"><button onclick="deleteUser(${u.id})" class="text-danger"><i class="fas fa-trash"></i></button></td>
-                </tr>`
-            ).join('');
-        }
-        function deleteUser(id) {
-            if(confirm('¿Eliminar este usuario?')) {
-                db.users = db.users.filter(u => u.id != id);
-                saveData(); renderUsers();
-            }
-        }
-
-        // ===== DASHBOARD =====
-        function updateCounts() {
-            document.getElementById('count-workers').textContent = db.workers.length;
-            document.getElementById('count-projects').textContent = db.projects.length;
-            document.getElementById('count-materials').textContent = db.materials.length;
-            const total = db.expenses.reduce((s, e) => s + e.amount, 0);
-            document.getElementById('sum-expenses').textContent = '$' + total.toFixed(2);
-        }
-        function renderCharts() {
-            if(charts.proj) charts.proj.destroy();
-            charts.proj = new Chart(document.getElementById('chartProjects'), {
-                type: 'bar',
-                data: {
-                    labels: db.projects.map(p => p.name),
-                    datasets: [{ label: 'Gastos ($)', data: db.projects.map(p => db.expenses.filter(e => e.projectId == p.id).reduce((s,e)=>s+e.amount,0)), backgroundColor: '#165DFF' }]
-                }
-            });
-            if(charts.cat) charts.cat.destroy();
-            const cats = ['Materiales', 'Transporte', 'Herramientas', 'Pagos', 'Otros'];
-            charts.cat = new Chart(document.getElementById('chartExpenses'), {
-                type: 'doughnut',
-                data: { labels: cats, datasets: [{ data: cats.map(c => db.expenses.filter(e => e.category == c).reduce((s,e)=>s+e.amount,0)), backgroundColor: ['#10b981','#f59e0b','#ef4444','#8b5cf6','#64748b'] }] }
-            });
-        }
-
-        // ===== EXPORTAR =====
-        function exportarTodo() {
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db.workers), "Trabajadores");
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db.materials), "Materiales");
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db.projects), "Proyectos");
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db.expenses), "Gastos");
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db.users.map(u=>({Nombre:u.name,Usuario:u.username}))), "Usuarios");
-            XLSX.writeFile(wb, "Reporte_Completo.xlsx");
-        }
-
-        // ===== INICIALIZAR =====
-        function renderAll() {
-            renderWorkers(); renderMaterials(); updateMaterialChecks();
-            renderModels(); updateProjectModels(); renderProjects();
-            updateExpenseProjects(); renderExpenses(); renderUsers();
-            updateCounts(); renderCharts();
-        }
-
-        // Cargar datos
-        loadData();
-
-        // Registrar Service Worker
-        if ('serviceWorker' in navigator) {
-         window.addEventListener('load', () => {
-         navigator.serviceWorker.register('/service-worker.js')
-          .then(registration => console.log('SW registrado'))
-          .catch(err => console.log('SW error:', err));
-        });
-      }
-
-      // ===== MENU MÓVIL - CÓDIGO DEFINITIVO =====
-        document.addEventListener('DOMContentLoaded', function() {
-            const btn = document.getElementById('menuToggle');
-            const sidebar = document.getElementById('sidebar');
-
-            if (btn && sidebar) {
-                btn.addEventListener('click', function() {
-                    sidebar.classList.toggle('-translate-x-full');
-                });
-
-                // Cerrar menú al tocar un enlace
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    link.addEventListener('click', function() {
-                        sidebar.classList.add('-translate-x-full');
-                    });
-                });
-            }
-        });
-        // ===== CERRAR MENU AL HACER CLICK FUERA =====
-            document.addEventListener('click', function(event) {
-                const sidebar = document.getElementById('sidebar');
-                const menuBtn = document.getElementById('menuToggle');
+                    <span class="text-xs px-2 py-1 rounded-full ${p.status=='Construccion'?'bg-orange-100 text-orange-700':p.status=='Finalizado'?'bg-green-100 text-green-700':'bg-gray-100'}">${p.status}</span>
+                </div>
+                <p class="text-sm text-gray-500"> ${p.location || 'Sin ubicación'} | ${p.dateStart}</p>
                 
-                // Verificar si el click fue FUERA del menu y FUERA del botón
-                if (!sidebar.contains(event.target) && !menuBtn.contains(event.target)) {
-                    sidebar.classList.add('-translate-x-full');
-                }
+                <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
+                    <div>Presupuesto: <br><strong class="text-blue-600">$${p.estimatedCost?.toLocaleString()}</strong></div>
+                    <div>Invertido: <br><strong class="text-red-600">$${gastado.toLocaleString()}</strong></div>
+                    <div>Venta: <br><strong>$${p.salePrice?.toLocaleString()}</strong></div>
+                    <div>Ganancia: <br><strong class="text-green-600">$${ganancia.toLocaleString()}</strong></div>
+                </div>
+
+                <div class="mt-4">
+                    <p class="text-sm mb-1">Avance: ${p.progress}%</p>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-green-500 h-2 rounded-full" style="width:${p.progress}%"></div>
+                    </div>
+                </div>
+                <button onclick="openProjectDetails(${p.id})" class="mt-4 w-full bg-blue-600 text-white py-2 rounded">Ver / Editar</button>
+                <button onclick="deleteProject(${p.id})" class="mt-2 w-full bg-red-600 text-white py-2 rounded">Eliminar</button>
+
+            </div>`;
+        }).join('');
+    }
+
+    // ==== GASTOS ====
+    function updateExpenseProjects(){
+        document.getElementById('eProject').innerHTML = '<option value="">General / Sin proyecto</option>' + db.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    }
+
+    document.getElementById('formExpense').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        db.expenses.push({
+            id:Date.now(),
+            date: new Date().toISOString().split('T')[0],
+            description: document.getElementById('eDesc').value,
+            amount: parseFloat(document.getElementById('eAmount').value),
+            category: document.getElementById('eCategory').value,
+            projectId: document.getElementById('eProject').value || null
+        });
+        await saveData(); renderExpenses(); renderCharts(); updateCounts(); e.target.reset();
+        showToast('success', 'Gasto Registrado', 'Finanzas actualizadas');
+    });
+
+    function renderExpenses() {
+    document.getElementById('tableExpenses').innerHTML = db.expenses.sort((a,b)=>b.id-a.id).map(e => {
+        const proj = db.projects.find(p=>p.id==e.projectId);
+        return `
+        <tr class="hover:bg-gray-50">
+            <td class="p-3">${e.date}</td>
+            <td class="p-3">${e.description}</td>
+            <td class="p-3"><span class="px-2 py-1 bg-gray-100 rounded text-xs">${e.category}</span></td>
+            <td class="p-3">${proj?.name || 'General'}</td>
+            <td class="p-3 font-bold text-red-600">$${e.amount.toLocaleString()}</td>
+            <!-- 👇 NUEVO BOTÓN ELIMINAR 👇 -->
+            <td class="p-3 text-center">
+                <button onclick="deleteExpense(${e.id})" class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function deleteExpense(id) {
+    if(confirm("⚠️ ¿Seguro que quieres eliminar este gasto?")) {
+        // Buscar y borrar
+        db.expenses = db.expenses.filter(e => e.id !== id);
+        
+        saveData();
+        renderExpenses();   // Actualizar lista
+        updateCounts();     // Actualizar números del Dashboard
+        renderCharts();     // Actualizar gráficos
+        
+        showToast('success', 'Eliminado', 'Gasto borrado correctamente');
+    }
+}
+    // ==== DASHBOARD Y ESTADÍSTICAS ====
+    function updateCounts() {
+    const totalInvertido = db.expenses.reduce((s,e)=>s+e.amount,0);
+    
+    // ✅ NUEVA FORMA DE CALCULAR GANANCIA
+    const totalGanado = db.projects.reduce((s,p) => {
+        // Si ya tiene gastos, usamos eso, si no, usamos lo estimado
+        const gastado = db.expenses.filter(e=>e.projectId==p.id).reduce((a,e)=>a+e.amount,0);
+        const costoReal = gastado > 0 ? gastado : (p.estimatedCost || 0);
+        return s + ((p.salePrice || 0) - costoReal);
+    }, 0);
+
+    const activos = db.projects.filter(p=>p.status=='Construccion').length;
+    const valorInv = db.materials.reduce((s,m)=> s + (m.stock*m.price),0);
+
+    document.getElementById('sum-expenses').textContent = '$' + totalInvertido.toLocaleString();
+    document.getElementById('sum-profit').textContent = '$' + totalGanado.toLocaleString();
+    document.getElementById('count-active-projects').textContent = activos;
+    document.getElementById('sum-materials').textContent = '$' + valorInv.toLocaleString();
+
+    // Gastos hoy y mes
+    const hoy = new Date();
+    const gastosHoy = db.expenses.filter(e => e.date == new Date().toISOString().split('T')[0]).reduce((s,e)=>s+e.amount,0);
+    const gastosMes = db.expenses.filter(e => {
+        if(!e.date) return false;
+        const d = new Date(e.date);
+        return d.getMonth() == hoy.getMonth() && d.getFullYear() == hoy.getFullYear();
+    }).reduce((s,e)=>s+e.amount,0);
+
+    document.getElementById('gasto-hoy').textContent = '$' + gastosHoy.toLocaleString();
+    document.getElementById('gasto-mes').textContent = '$' + gastosMes.toLocaleString();
+
+    // Proyecto mas costoso
+    const projMasCaro = db.projects.sort((a,b)=> {
+        const ga = db.expenses.filter(e=>e.projectId==a.id).reduce((s,e)=>s+e.amount,0) || (a.estimatedCost || 0);
+        const gb = db.expenses.filter(e=>e.projectId==b.id).reduce((s,e)=>s+e.amount,0) || (b.estimatedCost || 0);
+        return gb - ga;
+    })[0];
+    document.getElementById('proyecto-mayor').textContent = projMasCaro ? projMasCaro.name : '-';
+}
+
+
+    function renderCharts() {
+        if(charts.proj) charts.proj.destroy();
+        const ctx1 = document.getElementById('chartProjects').getContext('2d');
+        charts.proj = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: db.projects.map(p=>p.name),
+                datasets: [{
+                    label: 'Inversión Actual $',
+                    data: db.projects.map(p => db.expenses.filter(e=>e.projectId==p.id).reduce((s,e)=>s+e.amount,0)),
+                    backgroundColor: '#165DFF'
+                }]
+            },
+            options: { responsive: true }
+        });
+
+        if(charts.cat) charts.cat.destroy();
+        const ctx2 = document.getElementById('chartExpenses').getContext('2d');
+        const cats = ['Materiales','ManoObra','Transporte','Herramientas','Imprevistos','Otros'];
+        charts.cat = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Materiales','Mano de Obra','Transporte','Herramientas','Imprevistos','Otros'],
+                datasets: [{
+                    data: cats.map(c => db.expenses.filter(e=>e.category==c).reduce((s,e)=>s+e.amount,0)),
+                    backgroundColor: ['#00B42A','#FF7D00','#165DFF','#64748b','#F53F3F','#9CA3AF']
+                }]
+            }
+        });
+    }
+
+    // ==== MODAL Y MENU ====
+    function openProjectDetails(id){
+        const p = db.projects.find(x=>x.id==id);
+        document.getElementById('modalTitle').textContent = p.name;
+        document.getElementById('modalBody').innerHTML = `
+        <div class="space-y-4">
+            <label>Estado:</label>
+            <select id="editStatus" class="w-full border p-2 rounded">
+                <option value="Pendiente" ${p.status=='Pendiente'?'selected':''}> Pendiente</option>
+                <option value="Construccion" ${p.status=='Construccion'?'selected':''}> En construcción</option>
+                <option value="Finalizado" ${p.status=='Finalizado'?'selected':''}> Finalizado</option>
+                <option value="Entregado" ${p.status=='Entregado'?'selected':''}> Entregado</option>
+            </select>
+            
+            <label>Avance: ${p.progress}%</label>
+            <input type="range" min="0" max="100" value="${p.progress}" id="editRange" class="w-full">
+        </div>
+        <button onclick="saveProjectEdit(${p.id})" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Guardar Cambios</button>
+        `;
+        document.getElementById('detailModal').classList.remove('hidden');
+    }
+    
+    function saveProjectEdit(id){
+    const p = db.projects.find(x=>x.id==id);
+    p.status = document.getElementById('editStatus').value;
+    p.progress = parseInt(document.getElementById('editRange').value);
+    
+    saveData(); 
+    renderProjects(); 
+    closeModal();
+    
+    // ✅ IMPORTANTE: ACTUALIZAR DASHBOARD
+    updateCounts();
+    renderCharts();
+    
+    showToast('success','Actualizado','Proyecto modificado');
+}
+    function closeModal(){ document.getElementById('detailModal').classList.add('hidden'); }
+
+    //---FUNCION EXPORTAR EXEL---
+    function exportarExcel() {
+        try {
+            var wb = XLSX.utils.book_new();
+
+            var datosTrabajadores = [
+                ["NOMBRE", "CONTACTO", "SALARIO DIARIO"],
+                ...db.workers.map(w => [
+                    w.name || '',
+                    w.contact || '',
+                    '$' + (w.salaryDay || 0).toLocaleString()
+                ])
+            ];
+            var wsT = XLSX.utils.aoa_to_sheet(datosTrabajadores);
+            XLSX.utils.book_append_sheet(wb, wsT, "Trabajadores");
+
+            var datosMateriales = [
+                ["MATERIAL", "PRECIO"],
+                ...db.materials.map(m => [
+                    m.name || '',
+                    '$' + (m.price || 0).toLocaleString()
+                ])
+            ];
+            var wsM = XLSX.utils.aoa_to_sheet(datosMateriales);
+            XLSX.utils.book_append_sheet(wb, wsM, "Materiales");
+
+            var datosProyectos = [
+                ["NOMBRE", "UBICACIÓN", "FECHA INICIO", "ESTADO"],
+                ...db.projects.map(p => [
+                    p.name || '',
+                    p.location || '',
+                    p.date || '',
+                    p.status || ''
+                ])
+            ];
+            var wsP = XLSX.utils.aoa_to_sheet(datosProyectos);
+            XLSX.utils.book_append_sheet(wb, wsP, "Proyectos");
+
+            var datosGastos = [
+                ["DESCRIPCIÓN", "MONTO", "FECHA"],
+                ...db.expenses.map(g => [
+                    g.description || '',
+                    '$' + (g.amount || 0).toLocaleString(),
+                    g.date || ''
+                ])
+            ];
+            var wsG = XLSX.utils.aoa_to_sheet(datosGastos);
+            XLSX.utils.book_append_sheet(wb, wsG, "Gastos");
+
+            XLSX.writeFile(wb, 'Reporte_Gestion_Obras.xlsx');
+            showToast('success', '✅ Excel Generado', 'Archivo listo');
+        } catch (err) {
+            console.error(err);
+            showToast('error', '❌ Error', 'No se pudo generar');
+        }
+    }
+
+    function exportarPDF() {
+    try {
+        // 🟢 CAMBIO AQUÍ: de 'landscape' a 'portrait'
+        const doc = new jspdf.jsPDF('portrait', 'mm', 'a4');
+
+        function limpiarTexto(texto) {
+            if(!texto) return '';
+            return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+
+        // TITULO
+        doc.setFontSize(18);
+        doc.setTextColor(40, 40, 40);
+        doc.text('REPORTE DE GESTION DE OBRAS', 14, 25);
+        doc.setFontSize(11);
+        doc.setTextColor(80, 80, 80);
+        doc.text('Generado: ' + new Date().toLocaleDateString(), 14, 32);
+
+        let y = 45;
+
+        // ==================================
+        // SECCION TRABAJADORES
+        // ==================================
+        doc.setFontSize(14);
+        doc.setTextColor(0, 70, 140);
+        doc.text('TRABAJADORES', 14, y);
+        y += 7;
+
+        doc.setFillColor(0, 70, 140);
+        doc.rect(14, y, 180, 10, 'F'); // 🟢 Ancho reducido
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.text('Nombre', 16, y + 6.5);
+        doc.text('Contacto', 70, y + 6.5);
+        doc.text('Sueldo Diario', 130, y + 6.5);
+        y += 10;
+
+        doc.setTextColor(0, 0, 0);
+        doc.setDrawColor(200, 200, 200);
+        db.workers.forEach(w => {
+            doc.rect(14, y, 180, 10);
+            doc.text(limpiarTexto(w.name), 16, y + 6.5);
+            doc.text(limpiarTexto(w.contact || ''), 70, y + 6.5);
+            doc.text('$' + (w.salaryDay || 0).toLocaleString(), 130, y + 6.5);
+            y += 10;
+        });
+
+        y += 15;
+
+        // ==================================
+        // SECCION MATERIALES
+        // ==================================
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setFontSize(14);
+        doc.setTextColor(0, 120, 70);
+        doc.text('MATERIALES', 14, y);
+        y += 7;
+
+        doc.setFillColor(0, 120, 70);
+        doc.rect(14, y, 180, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text('Material', 16, y + 6.5);
+        doc.text('Stock', 100, y + 6.5);
+        doc.text('Precio', 140, y + 6.5);
+        y += 10;
+
+        doc.setTextColor(0, 0, 0);
+        db.materials.forEach(m => {
+            doc.rect(14, y, 180, 10);
+            doc.text(limpiarTexto(m.name), 16, y + 6.5);
+            doc.text(String(m.stock), 100, y + 6.5);
+            doc.text('$' + (m.price || 0).toLocaleString(), 140, y + 6.5);
+            y += 10;
+        });
+
+        y += 15;
+
+        // ==================================
+        // SECCION PROYECTOS
+        // ==================================
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setFontSize(14);
+        doc.setTextColor(180, 70, 0);
+        doc.text('PROYECTOS Y OBRAS', 14, y);
+        y += 7;
+
+        doc.setFillColor(180, 70, 0);
+        doc.rect(14, y, 180, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text('Nombre', 16, y + 6.5);
+        doc.text('Estado', 90, y + 6.5);
+        doc.text('Costo', 120, y + 6.5);
+        doc.text('Venta', 150, y + 6.5);
+        y += 10;
+
+        doc.setTextColor(0, 0, 0);
+        db.projects.forEach(p => {
+            doc.rect(14, y, 180, 10);
+            doc.text(limpiarTexto(p.name), 16, y + 6.5);
+            doc.text(p.status || '', 90, y + 6.5);
+            doc.text('$' + (p.estimatedCost || 0).toLocaleString(), 120, y + 6.5);
+            doc.text('$' + (p.salePrice || 0).toLocaleString(), 150, y + 6.5);
+            y += 10;
+        });
+
+        y += 15;
+
+        // ==================================
+        // SECCION GASTOS
+        // ==================================
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setFontSize(14);
+        doc.setTextColor(140, 0, 0);
+        doc.text('GASTOS REGISTRADOS', 14, y);
+        y += 7;
+
+        doc.setFillColor(140, 0, 0);
+        doc.rect(14, y, 180, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text('Fecha', 16, y + 6.5);
+        doc.text('Descripción', 50, y + 6.5);
+        doc.text('Monto', 140, y + 6.5);
+        y += 10;
+
+        doc.setTextColor(0, 0, 0);
+        db.expenses.forEach(e => {
+            doc.rect(14, y, 180, 10);
+            doc.text(e.date || '', 16, y + 6.5);
+            doc.text(limpiarTexto(e.description), 50, y + 6.5);
+            doc.text('$' + (e.amount || 0).toLocaleString(), 140, y + 6.5);
+            y += 10;
+        });
+
+        // GUARDAR
+        doc.save('Reporte_Gestion_Obras.pdf');
+        showToast('success', '✅ PDF Listo', 'Reporte generado en vertical');
+
+    } catch (error) {
+        console.error(error);
+        showToast('error', '❌ Error', 'No se pudo generar PDF');
+    }
+}
+
+    // ==== LOGIN Y SESIÓN ====
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const user = db.users.find(u => u.username === document.getElementById('loginUser').value && u.password === document.getElementById('loginPass').value);
+        if(user) {
+            currentUser = user;
+            localStorage.setItem('sesionActiva', 'true');
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            showToast('success', '¡Bienvenido!', 'Acceso correcto');
+        } else {
+            showToast('error', 'Error', 'Usuario o contraseña incorrectos');
+        }
+    });
+
+    function logout() {
+        currentUser = null;
+        localStorage.removeItem('sesionActiva');
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('mainApp').classList.add('hidden');
+    }
+
+    // ==== INICIALIZAR ====
+    function renderAll() {
+        renderWorkers(); renderMaterials();
+        renderModels(); updateProjectModels();
+        renderProjects(); updateExpenseProjects();
+        renderExpenses(); updateCounts(); renderCharts();
+        renderUsers();
+    }
+
+    // ==== MENÚ LATERAL ====
+    document.getElementById('menuToggle').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('-translate-x-full');
+    });
+
+    document.addEventListener('click', (e) => {
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('menuToggle');
+        
+        if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+            sidebar.classList.add('-translate-x-full');
+        }
+    });
+
+    // Navegación
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('bg-white/20', 'font-bold'));
+            link.classList.add('bg-white/20', 'font-bold');
+            const section = link.dataset.section;
+            document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
+            document.getElementById(section).classList.remove('hidden');
+            document.getElementById('sectionTitle').textContent = link.textContent.trim();
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+        });
+    });
+    
+    document.querySelectorAll('#pDateStart').forEach(input => {
+      const span = document.getElementById('datePlaceholder');
+      input.addEventListener('input', () => {
+      span.style.display = input.value ? 'none' : 'block';
+      });
+    });
+    
+    // ==== FUNCIONES DE MATERIALES ====
+    function editMaterial(id) {
+        const m = db.materials.find(x => x.id === id);
+        if(m) {
+            const nuevoStock = prompt("Modificar cantidad actual:", m.stock);
+            if(nuevoStock !== null && !isNaN(nuevoStock)) {
+                m.stock = parseFloat(nuevoStock);
+                saveData(); renderMaterials();
+            }
+        }
+    }
+
+    function deleteMaterial(id) {
+        if(confirm("¿Seguro que quieres eliminar este material?")) {
+            db.materials = db.materials.filter(x => x.id !== id);
+            saveData(); renderMaterials();
+            showToast('success', 'Eliminado', 'Material quitado del inventario');
+        }
+    }
+
+    function usarMaterial(id) {
+    const mat = db.materials.find(x => x.id === id);
+    if(!mat) return;
+
+    // 👇 CREAMOS EL MENÚ EMERGENTE PERSONALIZADO
+    const proyectosOptions = db.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    
+    const contenido = `
+        <div style="text-align: left; line-height: 2.5;">
+            <label><strong>Material:</strong> ${mat.name} (Stock: ${mat.stock})</label>
+            
+            <label><strong>Cantidad a usar:</strong></label>
+            <input type="number" id="cantidadInput" 
+                   style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;" 
+                   placeholder="Escribe la cantidad" min="1" max="${mat.stock}">
+
+            <label><strong>Seleccionar Proyecto:</strong></label>
+            <select id="proyectoSelect" 
+                    style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+                <option value="">-- GASTO GENERAL --</option>
+                ${proyectosOptions}
+            </select>
+        </div>
+    `;
+
+    // Usamos un prompt personalizado con estilo
+    const ventana = document.createElement('div');
+    ventana.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
+    ventana.innerHTML = `
+        <div style="background:white; padding:25px; border-radius:12px; width:90%; max-width:350px;">
+            <h3 style="margin-top:0;">Pasar a Gastos</h3>
+            ${contenido}
+            <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end;">
+                <button id="btnCancelar" style="padding:10px 20px; background:#ccc; border:none; border-radius:6px;">Cancelar</button>
+                <button id="btnAceptar" style="padding:10px 20px; background:#165DFF; color:white; border:none; border-radius:6px;">Aceptar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(ventana);
+
+    // Lógica de botones
+    ventana.querySelector('#btnCancelar').onclick = () => ventana.remove();
+    ventana.querySelector('#btnAceptar').onclick = () => {
+        const cantidad = parseFloat(ventana.querySelector('#cantidadInput').value);
+        const proyectoId = ventana.querySelector('#proyectoSelect').value;
+        const proyecto = db.projects.find(p => p.id == proyectoId);
+
+        // Validaciones
+        if(isNaN(cantidad) || cantidad <= 0){
+            alert('Por favor escribe una cantidad válida');
+            return;
+        }
+        if(cantidad > mat.stock){
+            showToast('error', 'Error', 'No tienes suficiente stock');
+            return;
+        }
+
+        const montoTotal = cantidad * mat.price;
+
+        // Descontar stock
+        mat.stock -= cantidad;
+        if(mat.stock <= 0) {
+            db.materials = db.materials.filter(x => x.id !== id);
+        }
+
+        // Agregar a gastos
+        db.expenses.push({
+            id: Date.now(),
+            date: new Date().toISOString().split('T')[0],
+            description: `Material: ${mat.name} (${cantidad} u.)`,
+            amount: montoTotal,
+            category: "Materiales",
+            projectId: proyectoId || null
+        });
+
+        saveData();
+        renderMaterials();
+        renderExpenses();
+        renderProjects();
+        updateCounts();
+        renderCharts();
+
+        showToast('success', '✅ Movimiento realizado', 
+            `Se usó $${montoTotal.toLocaleString()} en ${proyecto ? proyecto.name : 'Gasto General'}`);
+
+        ventana.remove();
+    };
+}
+
+    // ==== CARGA DE MATERIALES EN PLANTILLAS ====
+    function loadMaterialsForCheck() {
+        const container = document.getElementById('materialsCheckList');
+        if(!container) return; // Evita error si el div no existe
+        container.innerHTML = '';
+        
+        db.materials.forEach(mat => {
+            const div = document.createElement('div');
+            div.className = "flex items-center gap-2 bg-white p-2 rounded border";
+            div.innerHTML = `
+                <input type="checkbox" class="mat-check" value="${mat.id}" id="check_${mat.id}">
+                <label for="check_${mat.id}" class="flex-1 text-sm">${mat.name}</label>
+                <input type="number" placeholder="Cantidad" id="qty_${mat.id}" 
+                       class="w-20 p-1 border rounded text-sm text-center" disabled>
+            `;
+            
+            div.querySelector('.mat-check').addEventListener('change', function() {
+                const input = document.getElementById(`qty_${mat.id}`);
+                input.disabled = !this.checked;
+                if(!this.checked) input.value = '';
             });
-    </script>
+            
+            container.appendChild(div);
+        });
+    }
+
+    // Cargar materiales al entrar a la sección
+    document.querySelector('.nav-link[data-section="modelos"]').addEventListener('click', loadMaterialsForCheck);
+
+
+function deleteProject(id) {
+    if(confirm("⚠️ ¿Estás seguro de eliminar este proyecto?")) {
+        db.projects = db.projects.filter(x => x.id !== id);
+        db.expenses = db.expenses.filter(e => e.projectId != id);
+        
+        saveData();
+        renderProjects();
+        
+        // ✅ IMPORTANTE: ACTUALIZAR DASHBOARD
+        updateCounts();
+        renderCharts();
+        
+        updateExpenseProjects();
+        showToast('success', 'Eliminado', 'Proyecto borrado correctamente');
+    }
+}
+
+// 🚀 FORZA DE ACTUALIZACIÓN - SOLO ESTE CÓDIGO
+function calcularYMostrar() {
+    const select = document.getElementById('pModel');
+    if(!select) return;
+
+    const modelId = parseInt(select.value);
+    const model = db.models.find(m => m.id === modelId);
+
+    if(model) {
+        let costo = 0;
+        model.materialsIds.forEach(id => {
+            const mat = db.materials.find(m => m.id === id);
+            if(mat) costo += mat.price;
+        });
+
+        const venta = parseFloat(document.getElementById('pSalePrice').value) || 0;
+        const ganancia = venta - costo;
+
+        // ✅ ACTUALIZACIÓN FORZADA
+        document.getElementById('estimatedCost').textContent = '$' + costo.toLocaleString();
+        document.getElementById('estimatedDays').textContent = model.estimatedDays + ' días';
+        document.getElementById('estimatedProfit').textContent = '$' + ganancia.toLocaleString();
+        
+    } else {
+        document.getElementById('estimatedCost').textContent = '$0';
+        document.getElementById('estimatedDays').textContent = '-';
+        document.getElementById('estimatedProfit').textContent = '$0';
+    }
+}
+
+// Conectar al selector
+document.getElementById('pModel').addEventListener('change', calcularYMostrar);
+document.getElementById('pSalePrice').addEventListener('input', calcularYMostrar);
+
+function pagarSalario(id) {
+    const trabajador = db.workers.find(w => w.id === id);
+    if (!trabajador) return;
+
+    const cantidad = parseFloat(trabajador.salaryDay);
+    
+    if(confirm(`¿Pagar sueldo a ${trabajador.name}?\nMonto: $${cantidad.toLocaleString()}`)) {
+        
+        // ✅ AGREGAR A GASTOS
+        db.expenses.push({
+            id: Date.now(),
+            date: new Date().toISOString().split('T')[0],
+            description: `Sueldo: ${trabajador.name}`,
+            amount: cantidad,
+            category: "ManoObra", // Categoría Mano de Obra
+            projectId: null // Gasto general
+        });
+
+        saveData();
+        renderExpenses();   // Actualizar lista de gastos
+        updateCounts();     // Actualizar Dashboard
+        renderCharts();     // Actualizar gráficos
+
+        showToast('success', '✅ Pagado', `Sueldo de $${cantidad.toLocaleString()} registrado`);
+    }
+}
+
+function renderUsers() {
+    document.getElementById('tableUsers').innerHTML = db.users.map(u => {
+        return `
+        <tr class="hover:bg-gray-50 border-b">
+            <td class="p-3">${u.name}</td>
+            <td class="p-3">${u.username}</td>
+            <td class="p-3">
+                <span class="px-2 py-1 rounded text-xs ${u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">
+                    ${u.role === 'admin' ? 'Administrador' : 'Usuario'}
+                </span>
+            </td>
+            <td class="p-3 text-center">
+                <button onclick="editUser(${u.id})" class="text-blue-600 mr-2" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteUser(${u.id})" class="text-red-600" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+// Funciones de los botones
+function deleteUser(id) {
+    if(confirm("¿Seguro que quieres eliminar este usuario?")) {
+        db.users = db.users.filter(u => u.id !== id);
+        saveData();
+        renderUsers();
+        showToast('success', 'Eliminado', 'Usuario borrado correctamente');
+    }
+}
+
+function editUser(id) {
+    const u = db.users.find(x => x.id === id);
+    if(!u) return;
+
+    // Crear el modal visual
+    const modal = document.createElement('div');
+    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
+    modal.innerHTML = `
+        <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+            <h3 style="margin-top:0; color:#1e40af; font-size:20px;">🔐 Editar Usuario</h3>
+            <p style="color:#6b7280; margin-bottom:20px;">Usuario: <strong>${u.name}</strong></p>
+            
+            <label style="display:block; margin-bottom:8px; font-weight:500;">Nueva Contraseña</label>
+            <input type="password" id="newPassInput" 
+                   placeholder="Dejar en blanco para no cambiar"
+                   style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; font-size:16px;">
+
+            <label style="display:block; margin:20px 0 8px 0; font-weight:500;">Rol de Acceso</label>
+            <select id="newRoleSelect" 
+                    style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; font-size:16px;">
+                <option value="user" ${u.role === 'user' ? 'selected' : ''}>👤 Usuario Normal</option>
+                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>👑 Administrador</option>
+            </select>
+
+            <div style="display:flex; gap:10px; margin-top:25px; justify-content:flex-end;">
+                <button id="btnCancel" 
+                        style="padding:10px 20px; background:#e5e7eb; border:none; border-radius:8px; font-weight:500;">
+                    Cancelar
+                </button>
+                <button id="btnSave" 
+                        style="padding:10px 20px; background:#165DFF; color:white; border:none; border-radius:8px; font-weight:500;">
+                    Guardar Cambios
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Acciones de los botones
+    modal.querySelector('#btnCancel').onclick = () => modal.remove();
+    
+    modal.querySelector('#btnSave').onclick = () => {
+        const nuevaPass = modal.querySelector('#newPassInput').value.trim();
+        const nuevoRol = modal.querySelector('#newRoleSelect').value;
+        
+        // Cambiar rol siempre
+        u.role = nuevoRol;
+
+        // Cambiar contraseña solo si escribieron algo
+        if(nuevaPass !== "") {
+            u.password = nuevaPass;
+        }
+
+        saveData();
+        renderUsers();
+        modal.remove();
+        
+        showToast('success', '✅ Actualizado', 'Usuario modificado correctamente');
+    };
+}
+
+
+function openNewUser() {
+    const modal = document.createElement('div');
+    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
+    modal.innerHTML = `
+        <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:450px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+            <h3 style="margin-top:0; color:#1e40af; font-size:22px;">➕ Crear Nuevo Usuario</h3>
+            
+            <label>Nombre Completo</label>
+            <input type="text" id="newUserName" placeholder="Ej: Juan Pérez"
+                   style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; margin:8px 0 16px 0;">
+
+            <label>Nombre de Usuario</label>
+            <input type="text" id="newUserUser" placeholder="Ej: juanperez"
+                   style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; margin:8px 0 16px 0;">
+
+            <label>Contraseña</label>
+            <input type="password" id="newUserPass" placeholder="Escribe una contraseña"
+                   style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; margin:8px 0 16px 0;">
+
+            <label>Rol de Acceso</label>
+            <select id="newUserRole" 
+                    style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; margin:8px 0 20px 0;">
+                <option value="user">👤 Usuario Normal</option>
+                <option value="admin">👑 Administrador</option>
+            </select>
+
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button id="btnCancel" 
+                        style="padding:10px 20px; background:#e5e7eb; border:none; border-radius:8px; font-weight:500;">
+                    Cancelar
+                </button>
+                <button id="btnSave" 
+                        style="padding:10px 20px; background:#165DFF; color:white; border:none; border-radius:8px; font-weight:500;">
+                    Guardar Usuario
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('#btnCancel').onclick = () => modal.remove();
+    
+    modal.querySelector('#btnSave').onclick = () => {
+        const name = modal.querySelector('#newUserName').value.trim();
+        const username = modal.querySelector('#newUserUser').value.trim();
+        const password = modal.querySelector('#newUserPass').value;
+        const role = modal.querySelector('#newUserRole').value;
+
+        if(!name || !username || !password) {
+            showToast('error', 'Faltan datos', 'Completa todos los campos');
+            return;
+        }
+
+        // Verificar que no exista
+        if(db.users.some(u => u.username === username)) {
+            showToast('error', 'Usuario existe', 'Ese nombre de usuario ya está registrado');
+            return;
+        }
+
+        db.users.push({
+            id: Date.now(),
+            name: name,
+            username: username,
+            password: password,
+            role: role
+        });
+
+        saveData();
+        renderUsers();
+        modal.remove();
+        showToast('success', '✅ Creado', 'Usuario agregado correctamente');
+    };
+}
+    loadData();
+</script>
+</body>
+</html>
+
+
 </body>
 </html>
