@@ -2,44 +2,96 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Gestión de Obras | Sistema Profesional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <link rel="manifest" href="/manifest.json">
-   <meta name="theme-color" content="#165DFF">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @keyframes slide-in {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in { animation: slide-in 0.3s ease-out; }
+        .calendar-day { transition: all 0.1s ease; }
+        
+        #workerDetailModal span, #workerDetailModal h3 {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }
 
+        .overflow-x-auto {
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        .tabla-fija {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .tabla-fija th,
+        .tabla-fija td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .tabla-fija th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+
+        .tabla-fija td.text-right,
+        .tabla-fija th.text-right {
+            text-align: right;
+        }
+
+        .table-row-light { background-color: #ffffff; }
+        .table-row-dark { background-color: #f8fafc; }
+        .table-row-light:hover, .table-row-dark:hover { background-color: #eef2ff; transition: background-color 0.2s; }
+
+        .btn-tres-puntos {
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #6b7280;
+            padding: 6px 10px;
+            display: inline-block;
+        }
+        .btn-tres-puntos:hover { color: #1f2937; background-color: #f3f4f6; border-radius: 50%; }
+
+        .model-card { transition: all 0.2s ease; }
+        .model-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02); }
+        
+        .btn-excel { background-color: #059669; }
+        .btn-excel:hover { background-color: #047857; }
+        .btn-pdf { background-color: #dc2626; }
+        .btn-pdf:hover { background-color: #b91c1c; }
+    </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
 
 <!-- LOADING SCREEN -->
-<div id="loadingScreen" class="fixed inset-0 bg-black/50 backdrop-blur-md z-30 opacity-0 pointer-events-none transition-all duration-300">
-    <div class="text-center">
-        <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p class="text-xl font-semibold text-gray-700">Cargando Sistema...</p>
+<div id="loadingScreen" class="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-2xl shadow-xl text-center">
+        <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+        <p class="text-gray-700">Cargando sistema...</p>
     </div>
 </div>
 
 <!-- LOGIN SCREEN -->
-<div id="loginScreen" class="hidden min-h-screen flex items-center justify-center p-4">
+<div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
     <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
         <h2 class="text-3xl font-bold text-center text-blue-600 mb-2"><i class="fas fa-hard-hat"></i> Sistema de Obras</h2>
         <p class="text-center text-gray-500 mb-8">Acceso Administradores</p>
         <form id="loginForm">
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-1">Usuario</label>
-                <input type="text" id="loginUser" class="w-full p-3 border rounded-lg" required>
-            </div>
-            <div class="mb-6">
-                <label class="block text-sm font-medium mb-1">Contraseña</label>
-                <input type="password" id="loginPass" class="w-full p-3 border rounded-lg" required>
-            </div>
+            <div class="mb-4"><label class="block text-sm font-medium mb-1">Usuario</label><input type="text" id="loginUser" class="w-full p-3 border rounded-lg" required></div>
+            <div class="mb-6"><label class="block text-sm font-medium mb-1">Contraseña</label><input type="password" id="loginPass" class="w-full p-3 border rounded-lg" required></div>
             <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold">INGRESAR</button>
         </form>
     </div>
@@ -47,1270 +99,1149 @@
 
 <!-- MAIN APP -->
 <div id="mainApp" class="hidden h-screen flex overflow-hidden">
-
-    <!-- SIDEBAR -->
     <aside id="sidebar" class="w-64 bg-gradient-to-b from-blue-700 to-blue-900 text-white flex flex-col transition-transform duration-300 fixed lg:static h-full z-40 -translate-x-full lg:translate-x-0">
-        <div class="p-6 border-b border-white/20">
-             <h1 class="text-white text-xl font-bold flex items-center gap-2">
-                   <i class="fas fa-hard-hat"></i>
-                   <span>Cabañas Rodríguez AS</span>
-             </h1>
-             <p class="text-blue-100 text-sm mt-1">Gestión Profesional</p>
-         </div>
-         
+        <div class="p-6 border-b border-white/20"><h1 class="text-white text-xl font-bold flex items-center gap-2"><i class="fas fa-hard-hat"></i> <span>Cabañas Rodríguez AS</span></h1><p class="text-blue-100 text-sm mt-1">Gestión Profesional</p></div>
         <nav class="flex-1 overflow-y-auto p-4 space-y-2">
-            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="dashboard">
-                <i class="fas fa-chart-pie w-6 text-center text-lg"></i> <span>Dashboard</span>
-            </a>
-            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="trabajadores">
-                <i class="fas fa-users w-6 text-center text-lg"></i> <span>Trabajadores</span>
-            </a>
-            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="materiales">
-                <i class="fas fa-boxes-stacked w-6 text-center text-lg"></i> <span>Materiales</span>
-            </a>
-            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="modelos">
-                <i class="fas fa-sitemap w-6 text-center text-lg"></i> <span>Plantillas</span>
-            </a>
-            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="proyectos">
-                <i class="fas fa-screwdriver-wrench w-6 text-center text-lg"></i> <span>Proyectos</span>
-            </a>
-            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="gastos">
-                <i class="fas fa-money-bill-transfer w-6 text-center text-lg"></i> <span>Gastos / Finanzas</span>
-            </a>
-            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="usuarios">
-                <i class="fas fa-user-gear w-6 text-center text-lg"></i> <span>Usuarios</span>
-            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="dashboard"><i class="fas fa-chart-pie w-6"></i> Dashboard</a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="trabajadores"><i class="fas fa-users w-6"></i> Trabajadores</a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="materiales"><i class="fas fa-boxes-stacked w-6"></i> Materiales</a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="modelos"><i class="fas fa-sitemap w-6"></i> Plantillas</a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="proyectos"><i class="fas fa-screwdriver-wrench w-6"></i> Proyectos</a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="gastos"><i class="fas fa-money-bill-transfer w-6"></i> Gastos / Finanzas</a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/20 transition-all" data-section="usuarios"><i class="fas fa-user-gear w-6"></i> Usuarios</a>
         </nav>
-        
-        <div class="flex gap-2 mt-4 p-4">
-            <button onclick="exportarExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-                Exportar Excel
-            </button>
-            <button onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
-                Exportar PDF
-            </button>
+        <div class="flex gap-3 p-4">
+            <button onclick="exportarExcel()" class="btn-excel flex-1 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"><i class="fas fa-file-excel"></i> Excel</button>
+            <button onclick="exportarPDF()" class="btn-pdf flex-1 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"><i class="fas fa-file-pdf"></i> PDF</button>
         </div>
-
-        <div class="p-4 border-t border-white/20">
-            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 p-3 bg-red-600 hover:bg-red-700 rounded-lg">
-                <i class="fas fa-right-from-bracket"></i> Cerrar Sesión
-            </button>
-        </div>
+        <div class="p-4 border-t border-white/20"><button onclick="logout()" class="w-full flex items-center justify-center gap-2 p-3 bg-red-600 hover:bg-red-700 rounded-lg"><i class="fas fa-right-from-bracket"></i> Cerrar Sesión</button></div>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <main class="flex-1 overflow-y-auto">
-        <!-- HEADER -->
-        <header class="bg-white shadow-sm p-4 flex justify-between items-center sticky top-0 z-30">
-            <button id="menuToggle" class="lg:hidden text-2xl text-gray-700"><i class="fas fa-bars"></i></button>
-            <h2 id="sectionTitle" class="text-xl font-bold">Dashboard</h2>
-            <div></div>
-        </header>
-
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center sticky top-0 z-30"><button id="menuToggle" class="lg:hidden text-2xl text-gray-700"><i class="fas fa-bars"></i></button><h2 id="sectionTitle" class="text-xl font-bold">Dashboard</h2><div></div></header>
         <div class="p-4 md:p-6">
-
-            <!-- DASHBOARD -->
             <section id="dashboard" class="section-content">
-                
-                <!-- TARJETAS RESUMEN -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    
-                    <div class="bg-white rounded-xl p-6 shadow border-l-4 border-blue-600">
-                        <p class="text-gray-500 text-sm">Inversión Total</p>
-                        <p id="sum-expenses" class="text-3xl font-bold text-blue-700">$0</p>
-                    </div>
-
-                    <div class="bg-white rounded-xl p-6 shadow border-l-4 border-green-600">
-                        <p class="text-gray-500 text-sm">Ganancia Estimada</p>
-                        <p id="sum-profit" class="text-3xl font-bold text-green-700">$0</p>
-                    </div>
-
-                    <div class="bg-white rounded-xl p-6 shadow border-l-4 border-orange-500">
-                        <p class="text-gray-500 text-sm">Proyectos Activos</p>
-                        <p id="count-active-projects" class="text-3xl font-bold text-orange-600">0</p>
-                    </div>
-
-                    <div class="bg-white rounded-xl p-6 shadow border-l-4 border-purple-600">
-                        <p class="text-gray-500 text-sm">Valor en Inventario</p>
-                        <p id="sum-materials" class="text-3xl font-bold text-purple-600">$0</p>
-                    </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-xl p-6 shadow border-l-4 border-blue-600"><p class="text-gray-500 text-sm">Inversión Total</p><p id="sum-expenses" class="text-3xl font-bold text-blue-700">$0</p></div>
+                    <div class="bg-white rounded-xl p-6 shadow border-l-4 border-green-600"><p class="text-gray-500 text-sm">Ganancia Real</p><p id="sum-profit" class="text-3xl font-bold text-green-700">$0</p></div>
+                    <div class="bg-white rounded-xl p-6 shadow border-l-4 border-orange-500"><p class="text-gray-500 text-sm">Proyectos Activos</p><p id="count-active-projects" class="text-3xl font-bold text-orange-600">0</p></div>
+                    <div class="bg-white rounded-xl p-6 shadow border-l-4 border-purple-600"><p class="text-gray-500 text-sm">Valor Inventario</p><p id="sum-materials" class="text-3xl font-bold text-purple-600">$0</p></div>
                 </div>
-
-                <!-- TARJETAS EXTRAS -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-white p-4 rounded-lg shadow">
-                        <p class="text-sm text-gray-500">Gasto Hoy</p>
-                        <p id="gasto-hoy" class="text-xl font-bold text-red-600">$0</p>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow">
-                        <p class="text-sm text-gray-500">Gasto Mes Actual</p>
-                        <p id="gasto-mes" class="text-xl font-bold text-red-600">$0</p>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow">
-                        <p class="text-sm text-gray-500">Proyecto Más Costoso</p>
-                        <p id="proyecto-mayor" class="text-xl font-bold text-gray-700">-</p>
-                    </div>
-                </div>
-
-                <!-- GRAFICOS -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-6 rounded-xl shadow">
-                        <h3 class="font-bold mb-4">Inversión por Proyecto</h3>
-                        <canvas id="chartProjects" height="250"></canvas>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow">
-                        <h3 class="font-bold mb-4">Distribución de Gastos</h3>
-                        <canvas id="chartExpenses" height="250"></canvas>
-                    </div>
-                </div>
-
-                <!-- ALERTAS -->
-                <div id="alertas-container" class="mt-6">
-                    <h3 class="font-bold mb-2"><i class="fas fa-triangle-exclamation text-yellow-500"></i> Alertas del Sistema</h3>
-                    <div id="alertas-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-                </div>
-
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="bg-white p-6 rounded-xl shadow"><h3 class="font-bold mb-4">Inversión por Proyecto</h3><canvas id="chartProjects"></canvas></div><div class="bg-white p-6 rounded-xl shadow"><h3 class="font-bold mb-4">Distribución de Gastos</h3><canvas id="chartExpenses"></canvas></div></div>
             </section>
 
-            <!-- TRABAJADORES -->
             <section id="trabajadores" class="section-content hidden">
                 <div class="bg-white rounded-xl p-6 mb-6">
                     <h3 class="text-lg font-semibold mb-4">Gestión de Personal</h3>
-                    <form id="formWorker" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <input type="text" id="wName" placeholder="Nombre Completo" class="border p-3 rounded-lg" required>
-                        <input type="text" id="wContact" placeholder="Contacto / Teléfono" class="border p-3 rounded-lg">
-                        <input type="number" id="wSalary" placeholder="Sueldo Diario $" class="border p-3 rounded-lg" required>
-                        <button type="submit" class="bg-blue-600 text-white py-3 rounded-lg">Guardar Trabajador</button>
+                    <form id="formWorker" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <input type="text" id="wName" placeholder="Nombre" class="border p-2 rounded" required>
+                        <input type="text" id="wContact" placeholder="Contacto" class="border p-2 rounded">
+                        <input type="number" id="wSalary" placeholder="Sueldo diario $" class="border p-2 rounded" required>
+                        <button type="submit" class="bg-blue-600 text-white p-2 rounded">Guardar</button>
                     </form>
                 </div>
-
-                <!-- TOTAL GENERAL -->
                 <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex justify-between items-center">
-                    <span class="text-xl font-bold text-green-800"> TOTAL A PAGAR EN NÓMINA:</span>
+                    <span class="font-bold">TOTAL NÓMINA:</span>
                     <span id="total-nomina" class="text-2xl font-bold text-green-700">$0</span>
                 </div>
-
                 <div class="overflow-x-auto">
-                  <table class="w-full min-w-[700px] text-left">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="p-3">Nombre</th>
-                                <th class="p-3 text-right">Sueldo Día</th>
-                                <th class="p-3 text-center">Días</th>
-                                <th class="p-3 text-center">Adelantos</th>
-                                <th class="p-3 text-right">Total a Cobrar</th>
-                                <th class="p-3 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableWorkers" class="divide-y"></tbody>
+                    <table class="w-full min-w-[800px]">
+                        <thead class="bg-gray-100"><tr><th class="p-3 text-left">Nombre</th><th class="p-3 text-right">Sueldo día</th><th class="p-3 text-center">Días</th><th class="p-3 text-center">Adelantos</th><th class="p-3 text-right">Total</th><th class="p-3 text-center">Acciones</th></tr></thead>
+                        <tbody id="tableWorkers"></tbody>
                     </table>
                 </div>
             </section>
 
-            <!-- MATERIALES -->
             <section id="materiales" class="section-content hidden">
-                <div class="bg-white rounded-xl p-6 mb-6">
-                    <h3 class="text-lg font-semibold mb-4">Inventario</h3>
-                    <form id="formMaterial" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <input type="text" id="mName" placeholder="Nombre Material" class="border p-3 rounded-lg" required>
-                        <input type="number" id="mStock" placeholder="Cantidad" class="border p-3 rounded-lg" required>
-                        <input type="number" id="mPrice" placeholder="Precio Unitario $" class="border p-3 rounded-lg" required>
-                        <button type="submit" class="bg-green-600 text-white py-3 rounded-lg">Agregar</button>
-                    </form>
-                </div>
-
-                <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6 flex justify-between items-center">
-                    <span class="text-xl font-bold text-purple-800"> VALOR TOTAL DEL INVENTARIO:</span>
-                    <span id="total-inventario" class="text-2xl font-bold text-purple-700">$0</span>
-                </div>
-
-                <div class="bg-white rounded-xl overflow-hidden shadow">
-                    <table class="w-full text-left">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="p-3">Material</th>
-                                <th class="p-3 text-center">Stock</th>
-                                <th class="p-3 text-right">Precio Unit.</th>
-                                <th class="p-3 text-right bg-green-50">Total Valorado</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableMaterials" class="divide-y"></tbody>
-                    </table>
-                </div>
+                <div class="bg-white rounded-xl p-6 mb-6"><h3 class="font-semibold">Inventario</h3><form id="formMaterial" class="grid grid-cols-1 md:grid-cols-4 gap-3"><input type="text" id="mName" placeholder="Material" class="border p-2 rounded"><input type="number" id="mStock" placeholder="Stock" class="border p-2 rounded"><input type="number" id="mPrice" placeholder="Precio $" class="border p-2 rounded"><button type="submit" class="bg-green-600 text-white p-2 rounded">Agregar</button></form></div>
+                <div class="bg-purple-50 p-4 mb-6 flex justify-between"><span class="font-bold">Valor Inventario:</span><span id="total-inventario" class="font-bold text-xl">$0</span></div>
+                <div class="overflow-x-auto"><table class="w-full min-w-[800px]"><thead class="bg-gray-100"><tr><th class="p-3 text-left">Material</th><th class="p-3 text-right">Stock</th><th class="p-3 text-right">Precio</th><th class="p-3 text-right">Total</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tableMaterials"></tbody></table></div>
             </section>
 
-            <!-- MODELOS / PLANTILLAS -->
             <section id="modelos" class="section-content hidden">
-                 <div class="bg-white rounded-xl p-6 mb-6">
-                    <h3 class="text-lg font-semibold mb-4"> Nueva Plantilla de Construcción</h3>
-                    <form id="formModel" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="hidden" id="modId" value="">
-                        <input type="text" id="modName" placeholder="Nombre Modelo (Ej: 6x9 Premium)" class="border p-3 rounded-lg" required>
-                        <input type="text" id="modSize" placeholder="Metros Cuadrados" class="border p-3 rounded-lg" required>
-                        <input type="number" id="modDays" placeholder="Días estimados de construcción" class="border p-3 rounded-lg" required>
-                        <textarea id="modDesc" placeholder="Descripción / Detalles" class="border p-3 rounded-lg md:col-span-2"></textarea>                                           
-
-                        <div class="md:col-span-2">
-    <label class="block font-medium mb-2">📋 Materiales necesarios:</label>
-    <div id="materialsCheckList" class="grid grid-cols-1 md:grid-cols-2 gap-3 border p-4 rounded-lg bg-gray-50 max-h-60 overflow-y-auto">
-        <!-- Aquí se cargan automáticamente los materiales -->
-    </div>
-</div>
-
-
-                        <button type="submit" class="bg-purple-600 text-white py-3 rounded-lg md:col-span-2">Guardar Plantilla</button>
-                    </form>
-                </div>
-                <div id="listModels" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+                <div class="bg-white rounded-xl p-6 mb-6"><h3 class="font-semibold">Nueva Plantilla</h3><form id="formModel" class="grid grid-cols-1 md:grid-cols-2 gap-3"><input type="hidden" id="modId"><input type="text" id="modName" placeholder="Nombre" class="border p-2 rounded"><input type="text" id="modSize" placeholder="Metros²" class="border p-2 rounded"><input type="number" id="modDays" placeholder="Días estimados" class="border p-2 rounded"><textarea id="modDesc" placeholder="Descripción" class="border p-2 rounded md:col-span-2"></textarea><div class="md:col-span-2"><label>Materiales:</label><div id="materialsCheckList" class="grid grid-cols-2 gap-2 border p-2 rounded max-h-40 overflow-auto"></div></div><button type="submit" class="bg-purple-600 text-white p-2 rounded md:col-span-2">Guardar</button></form></div>
+                <div id="listModels" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
             </section>
 
-            <!-- PROYECTOS -->
             <section id="proyectos" class="section-content hidden">
-                <div class="bg-white rounded-xl p-6 mb-6">
-                    <h3 class="text-lg font-semibold mb-4"> Nuevo Proyecto</h3>
-                    <form id="formProject" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <input type="text" id="pName" placeholder="Nombre de la Obra" class="border p-3 rounded-lg" required>
-                        <div class="relative">
-                           <input type="date" id="pDateStart" class="border p-3 rounded-lg w-full" required onchange="this.dataset.date=this.value">
-                           <span id="datePlaceholder" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">Fecha de Inicio</span>
-                        </div>
-                        <select id="pModel" class="border p-3 rounded-lg" onchange="calcularCostoEstimado()">
-                            <option value="">Seleccionar Plantilla</option>
-                        </select>
-                        <input type="text" id="pLocation" placeholder="Ubicación / Barrio" class="border p-3 rounded-lg">
-                        <input type="number" id="pSalePrice" placeholder="Precio de Venta $" class="border p-3 rounded-lg">
-                        <select id="pStatus" class="border p-3 rounded-lg">
-                            <option value="Pendiente"> Pendiente</option>
-                            <option value="Construccion"> En Construcción</option>
-                            <option value="Finalizado"> Finalizado</option>
-                            <option value="Entregado"> Entregado</option>
-                        </select>
-                        
-                        <!-- RESUMEN COSTOS -->
-                        <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 bg-blue-50 p-4 rounded-lg">
-                            <div>
-                                <p class="text-sm text-gray-600">Costo Estimado (Material + MO)</p>
-                                <p id="estimatedCost" class="text-xl font-bold text-blue-700">$0</p>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-600">Duración Estimada</p>
-                                <p id="estimatedDays" class="text-xl font-bold text-gray-700">-</p>
-                            </div>
-                            <div>
-                                <p class="text-sm text-gray-600">Ganancia Estimada</p>
-                                <p id="estimatedProfit" class="text-xl font-bold text-green-700">$0</p>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-lg md:col-span-3">Crear Proyecto</button>
-                    </form>
-                </div>
-
-                <div id="listProjects" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                <div class="bg-white rounded-xl p-6 mb-6"><h3 class="font-semibold">Nuevo Proyecto</h3><form id="formProject" class="grid grid-cols-1 md:grid-cols-3 gap-3"><input type="text" id="pName" placeholder="Nombre obra" class="border p-2 rounded" required><input type="date" id="pDateStart" class="border p-2 rounded" required><select id="pModel" class="border p-2 rounded" required><option value="">Seleccionar plantilla</option></select><input type="text" id="pLocation" placeholder="Ubicación" class="border p-2 rounded"><input type="number" id="pSalePrice" placeholder="Precio venta $" class="border p-2 rounded" required><select id="pStatus" class="border p-2 rounded"><option>Pendiente</option><option>Construccion</option><option>Finalizado</option></select><div class="md:col-span-3 grid grid-cols-3 gap-2 bg-blue-50 p-2 rounded"><div><span class="text-sm">Costo estimado</span><p id="estimatedCost" class="font-bold">$0</p></div><div><span class="text-sm">Duración</span><p id="estimatedDays" class="font-bold">-</p></div><div><span class="text-sm">Ganancia</span><p id="estimatedProfit" class="font-bold">$0</p></div></div><button type="submit" class="bg-orange-600 text-white p-2 rounded md:col-span-3">Crear</button></form></div>
+                <div id="listProjects" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
             </section>
 
-            <!-- GASTOS -->
             <section id="gastos" class="section-content hidden">
-                <div class="bg-white rounded-xl p-6 mb-6">
-                    <h3 class="text-lg font-semibold mb-4"> Registrar Gasto</h3>
-                    <form id="formExpense" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <input type="text" id="eDesc" placeholder="Descripción" class="border p-3 rounded-lg" required>
-                        <input type="number" id="eAmount" placeholder="Monto $" class="border p-3 rounded-lg" required>
-                        <select id="eCategory" class="border p-3 rounded-lg">
-                            <option value="Materiales"> Materiales</option>
-                            <option value="ManoObra"> Mano de Obra</option>
-                            <option value="Transporte"> Transporte</option>
-                            <option value="Herramientas"> Herramientas</option>
-                            <option value="Imprevistos"> Imprevistos</option>
-                            <option value="Otros"> Otros</option>
-                        </select>
-                        <select id="eProject" class="border p-3 rounded-lg">
-                            <option value="">General / Sin proyecto</option>
-                        </select>
-                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg md:col-span-4">Registrar Gasto</button>
-                    </form>
-                </div>
-                <div class="bg-white rounded-xl p-6 shadow">
-                    <h3 class="text-lg font-semibold mb-4">Historial de Gastos</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead class="bg-gray-50"><tr class="text-gray-600">
-                                <th class="p-3">Fecha</th><th class="p-3">Descripción</th><th class="p-3">Tipo</th><th class="p-3">Proyecto</th><th class="p-3 text-right">Monto</th>
-                            </tr></thead>
-                            <tbody id="tableExpenses" class="divide-y"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="bg-white rounded-xl p-6 mb-6"><h3 class="font-semibold">Registrar Gasto</h3><form id="formExpense" class="grid grid-cols-1 md:grid-cols-4 gap-3"><input type="text" id="eDesc" placeholder="Descripción" class="border p-2 rounded"><input type="number" id="eAmount" placeholder="Monto $" class="border p-2 rounded"><select id="eCategory" class="border p-2 rounded"><option>Materiales</option><option>ManoObra</option><option>Transporte</option><option>Otros</option></select><select id="eProject" class="border p-2 rounded"><option value="">General (sin proyecto)</option></select><button type="submit" class="bg-red-600 text-white p-2 rounded md:col-span-4">Registrar</button></form></div>
+                <div class="bg-white rounded p-4 overflow-x-auto"><table class="tabla-fija"><thead><tr><th>Fecha</th><th>Descripción</th><th>Tipo</th><th>Proyecto</th><th>Monto</th><th></th></tr></thead><tbody id="tableExpenses"></tbody></table></div>
             </section>
 
-            <!-- USUARIOS -->
             <section id="usuarios" class="section-content hidden">
-    <div class="bg-white rounded-xl p-6 shadow">
-        <h3 class="text-lg font-semibold mb-4">👤 Gestión de Usuarios</h3>
-                    <button onclick="openNewUser()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                <i class="fas fa-plus"></i> Nuevo Usuario
-            </button>
-        <p class="text-gray-500 mb-4">Aquí puedes administrar los accesos al sistema.</p>
-        
-        <div class="overflow-x-auto">
-            <table class="w-full border-collapse">
-                <thead>
-                    <tr class="bg-gray-100 text-left">
-                        <th class="p-3">Nombre</th>
-                        <th class="p-3">Usuario</th>
-                        <th class="p-3">Rol</th>
-                        <th class="p-3 text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tableUsers">
-                    <!-- Aquí aparecerán los usuarios -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-</section>
-
+                <div class="bg-white rounded-xl p-6 shadow"><h3 class="text-lg font-semibold mb-4">Gestión de Usuarios</h3><button onclick="openNewUser()" class="bg-green-600 text-white px-3 py-1 rounded mb-4">Nuevo Usuario</button><div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-100"><tr><th class="p-3 text-left">Nombre</th><th class="p-3 text-left">Usuario</th><th class="p-3 text-left">Rol</th><th class="p-3 text-center">Acciones</th></tr></thead>
+                        <tbody id="tableUsers"></tbody>
+                    </table>
+                </div></div>
+            </section>
         </div>
     </main>
 </div>
 
-<!-- MODAL -->
-<div id="detailModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6 border-b flex justify-between items-center">
-            <h3 id="modalTitle" class="text-xl font-bold">Detalles</h3>
-            <button onclick="closeModal()" class="text-gray-500 text-xl"><i class="fas fa-times"></i></button>
+<!-- MODALES -->
+<div id="workerDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4" style="display: none;"><div class="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-md"><div class="flex justify-between items-center mb-3"><h3 id="detailWorkerName" class="text-xl font-bold text-gray-800"></h3><button class="close-modal-btn text-gray-500 text-2xl">&times;</button></div><div class="space-y-2"><div class="flex justify-between"><span class="font-semibold">📱 Contacto:</span> <span id="detailWorkerContact" class="text-gray-700"></span></div><div class="flex justify-between"><span class="font-semibold">💰 Sueldo día:</span> <span id="detailWorkerSalary" class="text-gray-700"></span></div><div class="flex justify-between"><span class="font-semibold">📅 Días trabajados:</span> <span id="detailWorkerDays" class="text-gray-700"></span></div><div class="flex justify-between"><span class="font-semibold text-red-600">💸 Adelantos:</span> <span id="detailWorkerAdvances" class="text-red-600"></span></div><div class="flex justify-between"><span class="font-semibold text-red-600">⚠️ Descuentos:</span> <span id="detailWorkerDiscounts" class="text-red-600"></span></div><div class="flex justify-between border-t pt-2 mt-2"><span class="font-bold text-green-700">💰 Total a pagar:</span> <span id="detailWorkerTotal" class="font-bold text-green-700 text-xl"></span></div></div><div id="historyContainer" class="mt-4"></div><div class="mt-4 grid grid-cols-3 gap-2"><button id="editWorkerBtn" class="bg-blue-600 text-white py-2 rounded-xl">Editar</button><button id="payWorkerBtn" class="bg-green-600 text-white py-2 rounded-xl">Pagar</button><button id="deleteWorkerBtn" class="bg-red-600 text-white py-2 rounded-xl">Borrar</button></div><div class="mt-3"><label class="block text-sm font-medium">Descuento ($)</label><div class="flex gap-2 mt-1"><input type="number" id="newDiscountAmount" class="flex-1 border rounded-lg p-2"><button id="addDiscountBtn" class="bg-orange-500 text-white px-4 rounded-lg">Agregar</button></div></div><button class="close-modal-btn mt-4 w-full py-2 bg-gray-200 rounded-xl">Cerrar</button></div></div>
+
+<div id="calendarModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl p-4 w-full max-w-md"><div class="flex justify-between"><button id="prevMonthBtn" class="text-xl font-bold">&lt;</button><h3 id="calendarMonthYear" class="text-lg font-bold"></h3><button id="nextMonthBtn" class="text-xl font-bold">&gt;</button></div><div class="grid grid-cols-7 gap-1 text-center text-sm font-bold"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 mt-2"></div><div class="flex justify-center gap-3 text-xs mt-3"><span class="inline-flex items-center"><span class="w-3 h-3 bg-green-500 rounded mr-1"></span>Completo</span><span class="inline-flex"><span class="w-3 h-3 bg-yellow-400 rounded mr-1"></span>Medio</span><span class="inline-flex"><span class="w-3 h-3 bg-blue-600 rounded mr-1"></span>Pagado</span></div><button onclick="closeCalendarModal()" class="mt-3 w-full bg-gray-200 py-2 rounded">Cerrar</button></div></div>
+
+<div id="modalMaterialAcciones" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50"><div class="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-sm animate-slide-in"><div class="flex justify-between items-center mb-3"><h3 id="modalMaterialNombre" class="text-xl font-bold text-gray-800"></h3><button onclick="cerrarModalMaterial()" class="text-gray-500 text-2xl">&times;</button></div><div id="modalMaterialDetalles" class="space-y-2 text-sm mb-4"></div><div class="grid grid-cols-1 gap-2"><button id="btnUsarMaterial" class="bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl transition-colors"><i class="fas fa-tools mr-2"></i> Usar en obra</button><button id="btnEditarMaterial" class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl transition-colors"><i class="fas fa-edit mr-2"></i> Editar stock</button><button id="btnEliminarMaterial" class="bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl transition-colors"><i class="fas fa-trash mr-2"></i> Eliminar</button></div><button onclick="cerrarModalMaterial()" class="mt-4 w-full py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">Cerrar</button></div></div>
+
+<div id="modalEditarStock" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-sm animate-slide-in"><div class="flex justify-between items-center mb-4"><h3 id="editarStockTitle" class="text-xl font-bold text-gray-800">✏️ Editar Stock</h3><button onclick="cerrarModalEditarStock()" class="text-gray-500 text-2xl hover:text-gray-700">&times;</button></div><div id="editarStockContent"></div><div class="mt-5 flex gap-2"><button onclick="cerrarModalEditarStock()" class="flex-1 bg-gray-200 py-2 rounded-xl hover:bg-gray-300 transition-colors">Cancelar</button><button id="confirmEditarStock" class="flex-1 bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition-colors">Guardar</button></div></div></div>
+
+<div id="modalConfirmPay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-sm animate-slide-in"><div class="text-center mb-4"><div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-hand-holding-usd text-green-600 text-2xl"></i></div><h3 id="confirmPayTitle" class="text-xl font-bold text-gray-800 mb-2">Confirmar Pago</h3><p id="confirmPayMessage" class="text-gray-500 text-sm"></p></div><div class="flex gap-3 mt-4"><button id="confirmPayCancel" class="flex-1 bg-gray-200 py-2 rounded-xl hover:bg-gray-300 transition-colors"><i class="fas fa-times mr-1"></i> Cancelar</button><button id="confirmPayAccept" class="flex-1 bg-green-600 text-white py-2 rounded-xl hover:bg-green-700 transition-colors"><i class="fas fa-check mr-1"></i> Pagar</button></div></div></div>
+
+<div id="modalProyectoEdit" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-md animate-slide-in"><div class="flex justify-between items-center mb-4"><h3 id="modalProyectoTitle" class="text-xl font-bold text-gray-800">✏️ Editar Proyecto</h3><button onclick="cerrarModalProyecto()" class="text-gray-500 text-2xl hover:text-gray-700">&times;</button></div><div id="modalProyectoContent"></div><div class="mt-5 flex gap-2"><button onclick="cerrarModalProyecto()" class="flex-1 bg-gray-200 py-2 rounded-xl hover:bg-gray-300 transition-colors">Cancelar</button><button id="modalProyectoAction" class="flex-1 bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition-colors">Guardar</button></div></div></div>
+
+<div id="modalConfirmDelete" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4"><div class="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-sm animate-slide-in"><div class="text-center mb-4"><div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i></div><h3 id="confirmDeleteTitle" class="text-xl font-bold text-gray-800 mb-2">¿Eliminar registro?</h3><p id="confirmDeleteMessage" class="text-gray-500 text-sm">Esta acción no se puede deshacer.</p></div><div class="flex gap-3 mt-4"><button id="confirmDeleteCancel" class="flex-1 bg-gray-200 py-2 rounded-xl hover:bg-gray-300 transition-colors"><i class="fas fa-times mr-1"></i> Cancelar</button><button id="confirmDeleteAccept" class="flex-1 bg-red-600 text-white py-2 rounded-xl hover:bg-red-700 transition-colors"><i class="fas fa-trash mr-1"></i> Eliminar</button></div></div></div>
+
+<!-- Modal Usuario (Editar/Eliminar con estilo unificado) -->
+<div id="modalUserActions" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-sm animate-slide-in">
+        <div class="flex justify-between items-center mb-3">
+            <h3 id="modalUserName" class="text-xl font-bold text-gray-800"></h3>
+            <button onclick="cerrarModalUser()" class="text-gray-500 text-2xl hover:text-gray-700">&times;</button>
         </div>
-        <div id="modalBody" class="p-6"></div>
+        <div id="modalUserDetails" class="space-y-2 text-sm mb-4"></div>
+        <div class="grid grid-cols-1 gap-2">
+            <button id="btnEditarUser" class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl transition-colors"><i class="fas fa-edit mr-2"></i> Editar usuario</button>
+            <button id="btnEliminarUser" class="bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl transition-colors"><i class="fas fa-trash mr-2"></i> Eliminar usuario</button>
+        </div>
+        <button onclick="cerrarModalUser()" class="mt-4 w-full py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">Cerrar</button>
     </div>
 </div>
 
-<!-- TOAST NOTIFICATION -->
-<div id="toast" class="fixed top-4 right-4 z-50 transform translate-x-full transition-all duration-300">
-    <div id="toastContent" class="bg-white text-gray-800 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 border-l-4 border-green-500">
-        <i id="toastIcon" class="fas fa-check-circle text-green-500 text-xl"></i>
-        <div>
-            <p id="toastTitle" class="font-bold">Operación Exitosa</p>
-            <p id="toastText" class="text-sm text-gray-500">Guardado correctamente</p>
-        </div>
-    </div>
-</div>
+<div id="toast" class="fixed top-4 right-4 z-50 transform translate-x-full transition-all duration-300 bg-white border-l-4 border-green-500 p-3 rounded shadow-lg">Mensaje</div>
 
 <script>
-    // ==== CONFIGURACIÓN ====
-    const SUPABASE_URL = "https://kzjsymmvjwqiwefeuvmq.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6anN5bW12andxaXdlZmV1dm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMDczNTUsImV4cCI6MjA5MjY4MzM1NX0.cyu3elvy1rq7B97X4u0q57qkI9c0ZEfVXXNOinzeWdY";
+// ========== CONFIGURACIÓN SUPABASE ==========
+const SUPABASE_URL = "https://kzjsymmvjwqiwefeuvmq.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6anN5bW12andxaXdlZmV1dm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMDczNTUsImV4cCI6MjA5MjY4MzM1NX0.cyu3elvy1rq7B97X4u0q57qkI9c0ZEfVXXNOinzeWdY";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const defaultDB = {
-        users: [ { id: 1, name: "Administrador", username: "admin", password: "1234" } ],
-        workers: [], materials: [], models: [], projects: [], expenses: []
-    };
+// ========== VARIABLES GLOBALES ==========
+let db = { users: [], workers: [], materials: [], models: [], projects: [], expenses: [] };
+let currentUser = null;
+let charts = { proj: null, cat: null };
+let editingWorkerId = null;
+let currentWorkerForCalendar = null;
+let currentCalendarYear = new Date().getFullYear();
+let currentCalendarMonth = new Date().getMonth();
+let currentWorkerForDetail = null;
+let currentProjectForEdit = null;
+let currentUserForActions = null;
+let pendingDeleteCallback = null;
+let pendingPayCallback = null;
+let currentMaterialForEdit = null;
 
-    let db = JSON.parse(JSON.stringify(defaultDB));
-    let currentUser = null;
-    let charts = {};
-    let editingWorkerId = null;
+// ========== TOAST ==========
+function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.remove('translate-x-full');
+    setTimeout(() => toast.classList.add('translate-x-full'), 3000);
+}
 
-    // ==== TOAST NOTIFICACIONES ====
-    function showToast(type, title, text) {
-        const toast = document.getElementById('toast');
-        const content = document.getElementById('toastContent');
-        const icon = document.getElementById('toastIcon');
-        document.getElementById('toastTitle').textContent = title;
-        document.getElementById('toastText').textContent = text;
-
-        if(type === 'success') {
-            content.className = "bg-white text-gray-800 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 border-l-4 border-green-500";
-            icon.className = "fas fa-check-circle text-green-500 text-xl";
-        } else {
-            content.className = "bg-white text-gray-800 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 border-l-4 border-red-500";
-            icon.className = "fas fa-exclamation-circle text-red-500 text-xl";
-        }
-
-        toast.classList.remove('translate-x-full');
-        setTimeout(() => toast.classList.add('translate-x-full'), 3000);
-    }
-
-    // ==== GUARDAR Y CARGAR ====
-    async function saveData() {
-        try {
-            localStorage.setItem('cabanasDB', JSON.stringify(db));
-            await fetch(`${SUPABASE_URL}/rest/v1/data`, { method: 'DELETE', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }});
-            await new Promise(r=>setTimeout(r,200));
-            await fetch(`${SUPABASE_URL}/rest/v1/data`, {
-                method: 'POST',
-                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: JSON.stringify(db) })
-            });
-        } catch(e) { console.error(e); }
-    }
-
-    async function loadData() {
-        try {
-            const res = await fetch(`${SUPABASE_URL}/rest/v1/data?select=content`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }});
-            const data = await res.json();
-            if(data.length) db = JSON.parse(data.pop().content);
-        } catch(e) {
-            const saved = localStorage.getItem('cabanasDB');
-            if(saved) db = { ...db, ...JSON.parse(saved) };
-        } finally {
-            document.getElementById('loadingScreen').classList.add('hidden');
-            // Verificar sesión al cargar
-            if(localStorage.getItem('sesionActiva') === 'true') {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-            } else {
-                document.getElementById('loginScreen').classList.remove('hidden');
-            }
-            renderAll();
-        }
-    }
-
-    function deleteProject(id) {
-    if(confirm("⚠️ ¿Estás seguro de eliminar este proyecto?\nSe borrarán también sus gastos asociados.")) {
-        // Borrar el proyecto
-        db.projects = db.projects.filter(x => x.id !== id);
+// ========== EXPORTAR EXCEL ==========
+function exportarExcel() {
+    try {
+        const wb = XLSX.utils.book_new();
         
-        // Borrar también los gastos que pertenecían a este proyecto
-        db.expenses = db.expenses.filter(e => e.projectId != id);
+        // Hoja de Trabajadores
+        const workersData = [["NOMBRE", "CONTACTO", "SUELDO DIARIO", "DIAS TRABAJADOS", "ADELANTOS", "DESCUENTOS", "TOTAL A PAGAR"]];
+        db.workers.forEach(w => {
+            const total = (w.daysWorked * w.salaryDay) - (w.advances||0) - (w.discounts||0);
+            workersData.push([w.name, w.contact||'', w.salaryDay, w.daysWorked, w.advances||0, w.discounts||0, Math.max(0,total)]);
+        });
+        const wsWorkers = XLSX.utils.aoa_to_sheet(workersData);
+        XLSX.utils.book_append_sheet(wb, wsWorkers, "Trabajadores");
         
-        saveData();
-        renderProjects();
-        updateCounts();
-        renderCharts();
-        updateExpenseProjects(); // Actualizar lista en gastos
+        // Hoja de Materiales
+        const materialsData = [["MATERIAL", "STOCK", "PRECIO UNITARIO", "VALOR TOTAL"]];
+        db.materials.forEach(m => materialsData.push([m.name, m.stock, m.price, m.stock * m.price]));
+        const wsMaterials = XLSX.utils.aoa_to_sheet(materialsData);
+        XLSX.utils.book_append_sheet(wb, wsMaterials, "Materiales");
         
-        showToast('success', 'Eliminado', 'Proyecto borrado correctamente');
+        // Hoja de Proyectos
+        const projectsData = [["PROYECTO", "UBICACIÓN", "FECHA INICIO", "ESTADO", "PRECIO VENTA", "GASTOS", "GANANCIA"]];
+        db.projects.forEach(p => {
+            const gastado = db.expenses.filter(e => Number(e.projectId) === Number(p.id)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+            projectsData.push([p.name, p.location||'', p.dateStart, p.status, p.salePrice||0, gastado, (p.salePrice||0) - gastado]);
+        });
+        const wsProjects = XLSX.utils.aoa_to_sheet(projectsData);
+        XLSX.utils.book_append_sheet(wb, wsProjects, "Proyectos");
+        
+        // Hoja de Gastos
+        const expensesData = [["FECHA", "DESCRIPCIÓN", "CATEGORÍA", "PROYECTO", "MONTO"]];
+        db.expenses.sort((a,b) => b.id - a.id).forEach(e => {
+            const proj = db.projects.find(p => Number(p.id) === Number(e.projectId));
+            expensesData.push([e.date, e.description, e.category, proj?.name || 'General', e.amount]);
+        });
+        const wsExpenses = XLSX.utils.aoa_to_sheet(expensesData);
+        XLSX.utils.book_append_sheet(wb, wsExpenses, "Gastos");
+        
+        // Hoja de Usuarios
+        const usersData = [["NOMBRE", "USUARIO", "ROL"]];
+        db.users.forEach(u => usersData.push([u.name, u.username, u.role === 'admin' ? 'Administrador' : 'Usuario']));
+        const wsUsers = XLSX.utils.aoa_to_sheet(usersData);
+        XLSX.utils.book_append_sheet(wb, wsUsers, "Usuarios");
+        
+        XLSX.writeFile(wb, `Reporte_Sistema_${new Date().toISOString().split('T')[0]}.xlsx`);
+        showToast('Excel generado correctamente');
+    } catch(e) {
+        console.error(e);
+        showToast('Error al generar Excel', 'error');
     }
 }
 
+// ========== EXPORTAR PDF (TABLA DE MÉTRICAS COMPACTA) ==========
+function exportarPDF() {
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        
+        // Título principal
+        doc.setFontSize(18);
+        doc.setTextColor(0, 51, 102);
+        doc.text("Reporte del Sistema", 14, 15);
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 22);
+        
+        // ========== MÉTRICAS DEL DASHBOARD - TABLA COMPACTA ==========
+        const totalInversion = db.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        const gananciaTotal = calcularGananciaTotal();
+        const proyectosActivos = db.projects.filter(p => p.status === 'Construccion').length;
+        const valorInventario = db.materials.reduce((s, m) => s + ((Number(m.stock) || 0) * (Number(m.price) || 0)), 0);
+        
+        // Datos de la tabla
+        const metricsBody = [
+            ["INVERSIÓN TOTAL", `$${totalInversion.toLocaleString()}`],
+            ["GANANCIA REAL", gananciaTotal >= 0 ? `$${gananciaTotal.toLocaleString()}` : `-$${Math.abs(gananciaTotal).toLocaleString()}`],
+            ["PROYECTOS ACTIVOS", proyectosActivos.toString()],
+            ["VALOR INVENTARIO", `$${valorInventario.toLocaleString()}`]
+        ];
+        
+        // Colores para cada fila de la columna métrica
+        const coloresMetricas = [
+            [59, 130, 246],   // Azul - Inversión Total
+            gananciaTotal >= 0 ? [34, 197, 94] : [239, 68, 68],  // Verde o Rojo - Ganancia
+            [249, 115, 22],   // Naranja - Proyectos Activos
+            [168, 85, 247]    // Morado - Valor Inventario
+        ];
+        
+        // Crear tabla compacta (no ocupa todo el ancho)
+        doc.autoTable({
+            startY: 28,
+            head: [['MÉTRICA', 'VALOR']],
+            body: metricsBody,
+            theme: 'grid',
+            headStyles: { 
+                fillColor: [30, 41, 59], 
+                textColor: 255, 
+                fontStyle: 'bold',
+                fontSize: 10,
+                halign: 'center'
+            },
+            bodyStyles: {
+                fontSize: 11,
+                textColor: 50
+            },
+            columnStyles: {
+                0: { cellWidth: 60, fontStyle: 'bold', halign: 'left' },
+                1: { cellWidth: 40, halign: 'right', fontStyle: 'bold' }
+            },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
+            margin: { left: 14, right: 14 },
+            tableWidth: 110,
+            didDrawCell: function(data) {
+                // Colorear la primera columna (métrica)
+                if (data.section === 'body' && data.column.index === 0) {
+                    const color = coloresMetricas[data.row.index];
+                    if (color) {
+                        data.cell.styles.fillColor = color;
+                        data.cell.styles.textColor = [255, 255, 255];
+                    }
+                }
+                // Alinear el header de VALOR a la derecha
+                if (data.section === 'head' && data.column.index === 1) {
+                    data.cell.styles.halign = 'right';
+                }
+            }
+        });
+        
+        let yOffset = doc.lastAutoTable.finalY + 10;
+        
+        // ========== 1. TRABAJADORES ==========
+        if (db.workers.length > 0) {
+            doc.setFontSize(12);
+            doc.setTextColor(0, 51, 102);
+            doc.text("Trabajadores", 14, yOffset);
+            yOffset += 5;
+            
+            const workersBody = db.workers.map(w => {
+                const total = (w.daysWorked * w.salaryDay) - (w.advances||0) - (w.discounts||0);
+                return [w.name, w.contact||'', `$${w.salaryDay}`, w.daysWorked, `$${w.advances||0}`, `$${w.discounts||0}`, `$${Math.max(0,total)}`];
+            });
+            doc.autoTable({
+                startY: yOffset,
+                head: [['Nombre', 'Contacto', 'Sueldo/dia', 'Dias', 'Adelantos', 'Descuentos', 'Total']],
+                body: workersBody,
+                theme: 'striped',
+                headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+                margin: { left: 14, right: 14 },
+                tableWidth: 'auto'
+            });
+            yOffset = doc.lastAutoTable.finalY + 10;
+        }
+        
+        // ========== 2. MATERIALES ==========
+        if (db.materials.length > 0) {
+            if (yOffset > 180) { doc.addPage(); yOffset = 20; }
+            doc.setFontSize(12);
+            doc.setTextColor(0, 51, 102);
+            doc.text("Materiales", 14, yOffset);
+            yOffset += 5;
+            
+            const materialsBody = db.materials.map(m => [m.name, m.stock, `$${m.price}`, `$${m.stock * m.price}`]);
+            doc.autoTable({
+                startY: yOffset,
+                head: [['Material', 'Stock', 'Precio unitario', 'Valor total']],
+                body: materialsBody,
+                theme: 'striped',
+                headStyles: { fillColor: [34, 197, 94], textColor: 255 },
+                margin: { left: 14, right: 14 },
+                tableWidth: 'auto'
+            });
+            yOffset = doc.lastAutoTable.finalY + 10;
+        }
+        
+        // ========== 3. PROYECTOS ==========
+        if (db.projects.length > 0) {
+            if (yOffset > 180) { doc.addPage(); yOffset = 20; }
+            doc.setFontSize(12);
+            doc.setTextColor(0, 51, 102);
+            doc.text("Proyectos", 14, yOffset);
+            yOffset += 5;
+            
+            const projectsBody = db.projects.map(p => {
+                const gastado = db.expenses.filter(e => Number(e.projectId) === Number(p.id)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+                return [p.name, p.location||'', p.dateStart, p.status, `$${p.salePrice||0}`, `$${gastado}`, `$${(p.salePrice||0)-gastado}`];
+            });
+            doc.autoTable({
+                startY: yOffset,
+                head: [['Proyecto', 'Ubicacion', 'Fecha inicio', 'Estado', 'Venta', 'Gastos', 'Ganancia']],
+                body: projectsBody,
+                theme: 'striped',
+                headStyles: { fillColor: [249, 115, 22], textColor: 255 },
+                margin: { left: 14, right: 14 },
+                tableWidth: 'auto'
+            });
+            yOffset = doc.lastAutoTable.finalY + 10;
+        }
+        
+        // ========== 4. GASTOS ==========
+        if (db.expenses.length > 0) {
+            if (yOffset > 180) { doc.addPage(); yOffset = 20; }
+            doc.setFontSize(12);
+            doc.setTextColor(0, 51, 102);
+            doc.text("Gastos", 14, yOffset);
+            yOffset += 5;
+            
+            const expensesBody = db.expenses.sort((a,b) => b.id - a.id).map(e => {
+                const proj = db.projects.find(p => Number(p.id) === Number(e.projectId));
+                return [e.date, e.description, e.category, proj?.name || 'General', `$${Number(e.amount).toLocaleString()}`];
+            });
+            doc.autoTable({
+                startY: yOffset,
+                head: [['Fecha', 'Descripcion', 'Categoria', 'Proyecto', 'Monto']],
+                body: expensesBody,
+                theme: 'striped',
+                headStyles: { fillColor: [220, 38, 38], textColor: 255 },
+                margin: { left: 14, right: 14 },
+                tableWidth: 'auto'
+            });
+            yOffset = doc.lastAutoTable.finalY + 10;
+        }
+        
+        // ========== 5. USUARIOS ==========
+        if (db.users.length > 0) {
+            if (yOffset > 180) { doc.addPage(); yOffset = 20; }
+            doc.setFontSize(12);
+            doc.setTextColor(0, 51, 102);
+            doc.text("Usuarios", 14, yOffset);
+            yOffset += 5;
+            
+            const usersBody = db.users.map(u => [u.name, u.username, u.role === 'admin' ? 'Administrador' : 'Usuario']);
+            doc.autoTable({
+                startY: yOffset,
+                head: [['Nombre', 'Usuario', 'Rol']],
+                body: usersBody,
+                theme: 'striped',
+                headStyles: { fillColor: [107, 114, 128], textColor: 255 },
+                margin: { left: 14, right: 14 },
+                tableWidth: 'auto'
+            });
+            yOffset = doc.lastAutoTable.finalY + 10;
+        }
+        
+        // Guardar el PDF
+        doc.save(`Reporte_Sistema_${new Date().toISOString().split('T')[0]}.pdf`);
+        showToast('PDF generado correctamente');
+    } catch(e) {
+        console.error('Error al generar PDF:', e);
+        showToast('Error al generar PDF: ' + e.message, 'error');
+    }
+}
 
+// ========== FUNCIÓN DE GANANCIA ==========
+function calcularGananciaTotal() {
+    let gananciaTotal = 0;
+    db.projects.forEach(proyecto => {
+        const gastosDelProyecto = db.expenses.filter(gasto => {
+            if (!gasto.projectId) return false;
+            return Number(gasto.projectId) === Number(proyecto.id);
+        });
+        const totalGastado = gastosDelProyecto.reduce((sum, g) => sum + (Number(g.amount) || 0), 0);
+        const precioVenta = Number(proyecto.salePrice) || 0;
+        gananciaTotal += precioVenta - totalGastado;
+    });
+    return gananciaTotal;
+}
 
+// ========== GRÁFICOS ==========
+function renderCharts() {
+    if (charts.proj) { try { charts.proj.destroy(); } catch(e) {} charts.proj = null; }
+    if (charts.cat) { try { charts.cat.destroy(); } catch(e) {} charts.cat = null; }
+    
+    const ctx1 = document.getElementById('chartProjects');
+    if (ctx1) {
+        const labels = db.projects.length > 0 ? db.projects.map(p => p.name.length > 15 ? p.name.substring(0,12)+'...' : p.name) : ['Sin proyectos'];
+        const data = db.projects.length > 0 ? db.projects.map(p => db.expenses.filter(e => Number(e.projectId) === Number(p.id)).reduce((a, e) => a + (Number(e.amount) || 0), 0)) : [0];
+        charts.proj = new Chart(ctx1, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Inversión (Gastos reales)', data: data, backgroundColor: '#165DFF' }] }, options: { responsive: true, maintainAspectRatio: true } });
+    }
+    
+    const ctx2 = document.getElementById('chartExpenses');
+    if (ctx2) {
+        const cats = ['Materiales', 'ManoObra', 'Transporte', 'Otros'];
+        const data = cats.map(c => db.expenses.filter(e => e.category === c).reduce((s, e) => s + (Number(e.amount) || 0), 0));
+        charts.cat = new Chart(ctx2, { type: 'doughnut', data: { labels: cats, datasets: [{ data: data, backgroundColor: ['#00B42A', '#FF7D00', '#165DFF', '#9CA3AF'] }] }, options: { responsive: true, maintainAspectRatio: true } });
+    }
+}
 
-     // ==== RENDERIZADO TRABAJADORES ====
+// ========== UPDATE COUNTS ==========
+function updateCounts() {
+    const totalInv = db.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const gananciaTotal = calcularGananciaTotal();
+    const activos = db.projects.filter(p => p.status === 'Construccion').length;
+    const valorMat = db.materials.reduce((s, m) => s + ((Number(m.stock) || 0) * (Number(m.price) || 0)), 0);
+    
+    document.getElementById('sum-expenses').innerHTML = '$' + totalInv.toLocaleString();
+    const profitSpan = document.getElementById('sum-profit');
+    if (gananciaTotal >= 0) profitSpan.innerHTML = '<span class="text-green-700">$' + gananciaTotal.toLocaleString() + '</span>';
+    else profitSpan.innerHTML = '<span class="text-red-700">-$' + Math.abs(gananciaTotal).toLocaleString() + '</span>';
+    document.getElementById('count-active-projects').innerText = activos;
+    document.getElementById('sum-materials').innerHTML = '$' + valorMat.toLocaleString();
+}
+
+// ========== TRABAJADORES ==========
+function recalcDaysWorked(worker) {
+    let total = 0;
+    if (worker.attendance) {
+        Object.values(worker.attendance).forEach(status => {
+            if (status === 'full') total += 1;
+            else if (status === 'half') total += 0.5;
+        });
+    }
+    worker.daysWorked = total;
+    return total;
+}
+
+function renderWorkers() {
+    let totalNomina = 0;
+    const tbody = document.getElementById('tableWorkers');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    db.workers.forEach((w, index) => {
+        recalcDaysWorked(w);
+        const total = (w.daysWorked * w.salaryDay) - (w.advances||0) - (w.discounts||0);
+        if(total > 0) totalNomina += total;
+        const row = tbody.insertRow();
+        row.className = index % 2 === 0 ? 'table-row-light' : 'table-row-dark';
+        row.insertCell(0).innerHTML = `${w.name}<br><small class="text-gray-500">${w.contact||''}</small>`;
+        row.insertCell(1).innerHTML = `$${w.salaryDay.toLocaleString()}`;
+        row.insertCell(2).innerHTML = `<button onclick="openCalendarModal(${w.id})" class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-lg text-sm inline-flex items-center gap-1"><i class="far fa-calendar-alt"></i> ${w.daysWorked}</button>`;
+        row.insertCell(3).innerHTML = `<div class="flex items-center justify-center gap-2"><span class="font-bold text-blue-600">$${(w.advances || 0).toLocaleString()}</span><input type="number" id="adv_${w.id}" placeholder="+" class="w-20 p-1 border rounded text-center" step="100"><button onclick="saveAdvance(${w.id})" class="text-green-600" title="Agregar adelanto"><i class="fas fa-plus-circle"></i></button></div>`;
+        row.insertCell(4).innerHTML = `$${Math.max(0,total).toLocaleString()}`;
+        row.insertCell(5).innerHTML = `<button onclick="openWorkerDetailModal(${w.id})" class="text-gray-600 text-xl"><i class="fas fa-ellipsis-v"></i></button>`;
+        
+        row.cells[1].className = 'p-3 text-right';
+        row.cells[2].className = 'p-3 text-center';
+        row.cells[3].className = 'p-3 text-center';
+        row.cells[4].className = 'p-3 text-right font-bold text-green-700';
+        row.cells[5].className = 'p-3 text-center';
+    });
+    document.getElementById('total-nomina').innerText = '$' + totalNomina.toLocaleString();
+}
+
+async function saveAdvance(id) {
+    const w = db.workers.find(x => x.id === id);
+    const input = document.getElementById(`adv_${id}`);
+    const valor = parseFloat(input.value);
+    if (isNaN(valor) || valor <= 0) { showToast('Ingrese un monto válido', 'error'); input.value = ''; return; }
+    w.advances = (w.advances || 0) + valor;
+    if (!w.advanceHistory) w.advanceHistory = [];
+    w.advanceHistory.push({ date: new Date().toISOString().split('T')[0], amount: valor });
+    await saveData();
+    input.value = '';
+    renderWorkers();
+    if (currentWorkerForDetail && currentWorkerForDetail.id === id) {
+        const total = (w.daysWorked * w.salaryDay) - w.advances - (w.discounts || 0);
+        document.getElementById('detailWorkerAdvances').innerText = '$' + w.advances.toLocaleString();
+        document.getElementById('detailWorkerTotal').innerText = '$' + Math.max(0, total).toLocaleString();
+        renderHistoryInModal();
+    }
+    showToast(`Adelanto de $${valor.toLocaleString()} registrado`);
+}
+
+function openCalendarModal(id) {
+    currentWorkerForCalendar = db.workers.find(w => w.id === id);
+    if(!currentWorkerForCalendar) return;
+    renderCalendarGrid();
+    document.getElementById('calendarModal').classList.remove('hidden');
+}
+
+function closeCalendarModal() { document.getElementById('calendarModal').classList.add('hidden'); saveData(); renderWorkers(); }
+
+function renderCalendarGrid() {
+    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    document.getElementById('calendarMonthYear').innerHTML = `${meses[currentCalendarMonth]} ${currentCalendarYear}`;
+    const primerDia = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
+    const diasMes = new Date(currentCalendarYear, currentCalendarMonth+1, 0).getDate();
+    const grid = document.getElementById('calendarDaysGrid');
+    grid.innerHTML = '';
+    let offset = primerDia === 0 ? 6 : primerDia-1;
+    for(let i=0;i<offset;i++) grid.appendChild(document.createElement('div'));
+    for(let d=1; d<=diasMes; d++) {
+        const fecha = `${currentCalendarYear}-${String(currentCalendarMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        let estado = currentWorkerForCalendar.attendance?.[fecha] || 'empty';
+        let color = 'bg-gray-100 hover:bg-gray-200';
+        let clickable = true;
+        if(estado === 'full') color = 'bg-green-500 text-white';
+        else if(estado === 'half') color = 'bg-yellow-400 text-white';
+        else if(estado === 'paid') { color = 'bg-blue-600 text-white opacity-70'; clickable = false; }
+        const div = document.createElement('div');
+        div.className = `p-2 text-center rounded-lg ${color} ${clickable ? 'cursor-pointer' : ''}`;
+        div.innerText = d;
+        if(clickable) div.onclick = () => toggleAttendance(fecha);
+        grid.appendChild(div);
+    }
+}
+
+function toggleAttendance(fecha) {
+    if(!currentWorkerForCalendar.attendance) currentWorkerForCalendar.attendance = {};
+    const actual = currentWorkerForCalendar.attendance[fecha];
+    if(actual === 'paid') return;
+    if(!actual || actual === 'empty') currentWorkerForCalendar.attendance[fecha] = 'full';
+    else if(actual === 'full') currentWorkerForCalendar.attendance[fecha] = 'half';
+    else if(actual === 'half') delete currentWorkerForCalendar.attendance[fecha];
+    recalcDaysWorked(currentWorkerForCalendar);
+    renderCalendarGrid();
+}
+
+document.getElementById('prevMonthBtn').onclick = () => { currentCalendarMonth--; if(currentCalendarMonth<0){ currentCalendarMonth=11; currentCalendarYear--; } renderCalendarGrid(); };
+document.getElementById('nextMonthBtn').onclick = () => { currentCalendarMonth++; if(currentCalendarMonth>11){ currentCalendarMonth=0; currentCalendarYear++; } renderCalendarGrid(); };
+
+function openWorkerDetailModal(id) {
+    const worker = db.workers.find(w => w.id === id);
+    if (!worker) return;
+    currentWorkerForDetail = worker;
+    let days = 0;
+    if (worker.attendance) {
+        Object.values(worker.attendance).forEach(s => {
+            if (s === 'full') days += 1;
+            else if (s === 'half') days += 0.5;
+        });
+    }
+    worker.daysWorked = days;
+    const total = (worker.daysWorked * worker.salaryDay) - (worker.advances||0) - (worker.discounts||0);
+    document.getElementById('detailWorkerName').innerText = worker.name;
+    document.getElementById('detailWorkerContact').innerText = worker.contact || '-';
+    document.getElementById('detailWorkerSalary').innerText = '$' + worker.salaryDay.toLocaleString();
+    document.getElementById('detailWorkerDays').innerText = worker.daysWorked;
+    document.getElementById('detailWorkerAdvances').innerText = '$' + (worker.advances||0).toLocaleString();
+    document.getElementById('detailWorkerDiscounts').innerText = '$' + (worker.discounts||0).toLocaleString();
+    document.getElementById('detailWorkerTotal').innerText = '$' + Math.max(0, total).toLocaleString();
+    document.getElementById('workerDetailModal').style.display = 'flex';
+    document.getElementById('workerDetailModal').classList.remove('hidden');
+    renderHistoryInModal();
+}
+
+function closeWorkerDetailModal() {
+    document.getElementById('workerDetailModal').style.display = 'none';
+    document.getElementById('workerDetailModal').classList.add('hidden');
+}
+
+document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeWorkerDetailModal));
+
+function renderHistoryInModal() {
+    if (!currentWorkerForDetail) return;
+    const historyContainer = document.getElementById('historyContainer');
+    if (!historyContainer) return;
+    let html = '<div class="mt-4"><h4 class="font-bold text-sm mb-2">📋 Historial de Adelantos y Descuentos</h4>';
+    if (currentWorkerForDetail.advanceHistory && currentWorkerForDetail.advanceHistory.length > 0) {
+        html += '<div class="mb-2"><span class="font-semibold text-blue-600">Adelantos:</span><ul class="list-disc pl-5 text-sm">';
+        currentWorkerForDetail.advanceHistory.forEach(a => { html += `<li>${a.date}: +$${a.amount.toLocaleString()}</li>`; });
+        html += '</ul></div>';
+    }
+    if (currentWorkerForDetail.discountHistory && currentWorkerForDetail.discountHistory.length > 0) {
+        html += '<div><span class="font-semibold text-red-600">Descuentos:</span><ul class="list-disc pl-5 text-sm">';
+        currentWorkerForDetail.discountHistory.forEach(d => { html += `<li>${d.date}: -$${d.amount.toLocaleString()} (${d.reason})</li>`; });
+        html += '</ul></div>';
+    }
+    if ((!currentWorkerForDetail.advanceHistory || currentWorkerForDetail.advanceHistory.length === 0) && (!currentWorkerForDetail.discountHistory || currentWorkerForDetail.discountHistory.length === 0)) {
+        html += '<p class="text-gray-500 text-sm">No hay movimientos registrados</p>';
+    }
+    html += '</div>';
+    historyContainer.innerHTML = html;
+}
+
+// ========== MATERIALES ==========
+document.getElementById('formMaterial').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    db.materials.push({ id: Date.now(), name: document.getElementById('mName').value, stock: parseFloat(document.getElementById('mStock').value), price: parseFloat(document.getElementById('mPrice').value) });
+    await saveData(); renderMaterials(); updateCounts(); e.target.reset(); showToast('Material agregado');
+});
+
+function renderMaterials() {
+    let totalInv = 0;
+    const tbody = document.getElementById('tableMaterials');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    db.materials.forEach((m, index) => {
+        const total = m.stock * m.price;
+        totalInv += total;
+        const row = tbody.insertRow();
+        row.className = index % 2 === 0 ? 'table-row-light' : 'table-row-dark';
+        row.insertCell(0).innerHTML = m.name;
+        row.insertCell(1).innerHTML = m.stock;
+        row.insertCell(2).innerHTML = `$${m.price.toLocaleString()}`;
+        row.insertCell(3).innerHTML = `$${total.toLocaleString()}`;
+        row.insertCell(4).innerHTML = `<button onclick="abrirModalMaterial(${m.id})" class="text-gray-600 text-xl"><i class="fas fa-ellipsis-v"></i></button>`;
+        
+        row.cells[1].className = 'p-3 text-right';
+        row.cells[2].className = 'p-3 text-right';
+        row.cells[3].className = 'p-3 text-right font-bold text-green-700';
+        row.cells[4].className = 'p-3 text-center';
+    });
+    document.getElementById('total-inventario').innerText = '$' + totalInv.toLocaleString();
+}
+
+function abrirModalMaterial(id) {
+    const m = db.materials.find(x => x.id === id);
+    if (!m) return;
+    document.getElementById('modalMaterialNombre').innerText = m.name;
+    document.getElementById('modalMaterialDetalles').innerHTML = `<div><strong>Stock:</strong> ${m.stock} unidades</div><div><strong>Precio unitario:</strong> $${m.price.toLocaleString()}</div><div><strong>Valor total:</strong> $${(m.stock * m.price).toLocaleString()}</div>`;
+    document.getElementById('modalMaterialAcciones').classList.remove('hidden');
+    document.getElementById('modalMaterialAcciones').classList.add('flex');
+    document.getElementById('btnUsarMaterial').onclick = () => { usarMaterial(id); cerrarModalMaterial(); };
+    document.getElementById('btnEditarMaterial').onclick = () => { cerrarModalMaterial(); openModalEditarStock(id); };
+    document.getElementById('btnEliminarMaterial').onclick = () => { cerrarModalMaterial(); showConfirmDelete('¿Eliminar material?', `¿Estás seguro de eliminar <strong>${m.name}</strong>?`, async () => { db.materials = db.materials.filter(mat => mat.id !== id); await saveData(); renderMaterials(); showToast('Material eliminado'); }); };
+}
+
+function cerrarModalMaterial() { document.getElementById('modalMaterialAcciones').classList.add('hidden'); }
+
+function openModalEditarStock(id) {
+    const material = db.materials.find(m => m.id === id);
+    if (!material) return;
+    currentMaterialForEdit = material;
+    document.getElementById('editarStockTitle').innerHTML = `✏️ Editar Stock: ${material.name}`;
+    document.getElementById('editarStockContent').innerHTML = `<div class="space-y-3"><div><label class="block text-sm font-medium mb-1">Stock actual</label><input type="number" id="editStockCantidad" value="${material.stock}" class="border w-full p-2 rounded-lg"><p class="text-xs text-gray-500 mt-1">Ingrese la nueva cantidad de unidades</p></div><div class="bg-blue-50 p-3 rounded-lg"><p class="text-sm"><span class="font-semibold">Precio unitario:</span> $${material.price.toLocaleString()}</p><p class="text-sm"><span class="font-semibold">Valor total actual:</span> $${(material.stock * material.price).toLocaleString()}</p></div></div>`;
+    document.getElementById('modalEditarStock').classList.remove('hidden');
+    document.getElementById('modalEditarStock').classList.add('flex');
+    document.getElementById('confirmEditarStock').onclick = async () => {
+        const nuevaCantidad = parseFloat(document.getElementById('editStockCantidad').value);
+        if (isNaN(nuevaCantidad) || nuevaCantidad < 0) { showToast('Ingrese una cantidad válida', 'error'); return; }
+        material.stock = nuevaCantidad;
+        await saveData();
+        renderMaterials();
+        cerrarModalEditarStock();
+        showToast('Stock actualizado correctamente');
+    };
+}
+
+function cerrarModalEditarStock() { document.getElementById('modalEditarStock').classList.add('hidden'); currentMaterialForEdit = null; }
+
+function usarMaterial(id) {
+    const mat = db.materials.find(x => x.id === id);
+    if(!mat) return;
+    const proyectos = db.projects.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+    const modalDiv = document.createElement('div');
+    modalDiv.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+    modalDiv.innerHTML = `<div class="bg-white rounded-2xl shadow-2xl p-5 w-96 max-w-[90%] animate-slide-in"><h3 class="font-bold text-xl mb-4">📦 Usar Material</h3><p class="mb-3"><strong>${mat.name}</strong> - Stock: ${mat.stock} unidades</p><label class="block text-sm font-medium mb-1">Cantidad a usar:</label><input type="number" id="cantidad" placeholder="Cantidad" class="border w-full p-2 rounded mb-3"><label class="block text-sm font-medium mb-1">Asignar a proyecto:</label><select id="proyectoSelect" class="border w-full p-2 rounded mb-4"><option value="">Sin proyecto</option>${proyectos}</select><div class="flex gap-2"><button id="cancelar" class="flex-1 bg-gray-200 py-2 rounded-xl hover:bg-gray-300 transition-colors">Cancelar</button><button id="aceptar" class="flex-1 bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition-colors">Usar</button></div></div>`;
+    document.body.appendChild(modalDiv);
+    modalDiv.querySelector('#cancelar').onclick = () => modalDiv.remove();
+    modalDiv.querySelector('#aceptar').onclick = async () => {
+        const cant = parseFloat(modalDiv.querySelector('#cantidad').value);
+        if(isNaN(cant) || cant <= 0 || cant > mat.stock) { showToast('Cantidad inválida o insuficiente stock', 'error'); return; }
+        const proyId = modalDiv.querySelector('#proyectoSelect').value || null;
+        const total = cant * mat.price;
+        mat.stock -= cant;
+        if(mat.stock <= 0) db.materials = db.materials.filter(m => m.id !== mat.id);
+        db.expenses.push({ id: Date.now(), date: new Date().toISOString().split('T')[0], description: `Material: ${mat.name} (${cant} u.)`, amount: total, category: "Materiales", projectId: proyId ? Number(proyId) : null });
+        await saveData();
+        renderMaterials();
+        renderExpenses();
+        updateCounts();
+        renderCharts();
+        modalDiv.remove();
+        showToast(`Material usado: $${total.toLocaleString()}`);
+    };
+}
+
+// ========== MODELOS ==========
+function loadMaterialsForCheck() {
+    const container = document.getElementById('materialsCheckList');
+    if(!container) return;
+    container.innerHTML = '';
+    db.materials.forEach(mat => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2';
+        div.innerHTML = `<input type="checkbox" class="mat-check" value="${mat.id}" id="check_${mat.id}"><label>${mat.name}</label><input type="number" id="qty_${mat.id}" placeholder="Cantidad" class="w-16 border rounded p-1" disabled>`;
+        div.querySelector('.mat-check').onchange = function() { document.getElementById(`qty_${mat.id}`).disabled = !this.checked; if(!this.checked) document.getElementById(`qty_${mat.id}`).value = ''; };
+        container.appendChild(div);
+    });
+}
+
+document.getElementById('formModel').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const selected = [], details = [];
+    document.querySelectorAll('.mat-check:checked').forEach(c => {
+        const id = parseInt(c.value);
+        const qty = parseFloat(document.getElementById(`qty_${id}`).value);
+        if(!isNaN(qty) && qty > 0) { selected.push(id); details.push(`${db.materials.find(m => m.id === id).name}: ${qty}`); }
+    });
+    const dataModel = { name: document.getElementById('modName').value, size: document.getElementById('modSize').value, estimatedDays: parseInt(document.getElementById('modDays').value), desc: document.getElementById('modDesc').value, materialsIds: selected, materialsList: details };
+    const editId = parseInt(document.getElementById('modId').value);
+    if(editId) { const idx = db.models.findIndex(m => m.id === editId); if(idx !== -1) db.models[idx] = { ...db.models[idx], ...dataModel }; document.getElementById('modId').value = ''; }
+    else { db.models.push({ id: Date.now(), ...dataModel }); }
+    await saveData(); renderModels(); updateProjectModels(); e.target.reset(); loadMaterialsForCheck(); showToast('Plantilla guardada');
+});
+
+function renderModels() {
+    const container = document.getElementById('listModels');
+    if(!container) return;
+    container.innerHTML = '';
+    db.models.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'model-card bg-white rounded-xl shadow-md hover:shadow-lg p-5 border border-gray-100 transition-all';
+        div.innerHTML = `<div class="flex justify-between items-start mb-3"><h4 class="font-bold text-lg text-gray-800">${escapeHtml(m.name)}</h4><span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">${m.size || 'N/A'}</span></div><div class="flex items-center gap-4 text-sm text-gray-500 mb-3"><span><i class="far fa-calendar-alt mr-1"></i> ${m.estimatedDays || 0} días</span><span><i class="fas fa-ruler-combined mr-1"></i> ${m.size || '?'} m²</span></div><p class="text-sm text-gray-600 mb-3">${m.desc || 'Sin descripción'}</p><div class="bg-gray-50 rounded-lg p-2 mb-4 max-h-24 overflow-y-auto"><p class="text-xs font-semibold text-gray-500 mb-1">📦 Materiales:</p><p class="text-xs text-gray-600">${m.materialsList?.join(', ') || 'Sin materiales asignados'}</p></div><div class="flex gap-2"><button onclick="openEditModel(${m.id})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm transition-colors"><i class="fas fa-edit mr-1"></i> Editar</button><button onclick="deleteModel(${m.id})" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm transition-colors"><i class="fas fa-trash mr-1"></i> Borrar</button></div>`;
+        container.appendChild(div);
+    });
+}
+
+function openEditModel(id) {
+    const m = db.models.find(x => x.id === id);
+    if(!m) return;
+    document.getElementById('modId').value = m.id;
+    document.getElementById('modName').value = m.name;
+    document.getElementById('modSize').value = m.size;
+    document.getElementById('modDays').value = m.estimatedDays;
+    document.getElementById('modDesc').value = m.desc || '';
+    loadMaterialsForCheck();
+    setTimeout(() => {
+        document.querySelectorAll('.mat-check').forEach(c => {
+            const val = parseInt(c.value);
+            c.checked = m.materialsIds.includes(val);
+            const inp = document.getElementById(`qty_${val}`);
+            inp.disabled = !c.checked;
+            if(c.checked && inp) { const existing = m.materialsList?.find(l => l.includes(db.materials.find(mm => mm.id === val)?.name)); const qtyMatch = existing?.match(/(\d+(?:\.\d+)?)/); if(qtyMatch) inp.value = qtyMatch[1]; }
+        });
+    }, 100);
+}
+
+async function deleteModel(id) {
+    const model = db.models.find(m => m.id === id);
+    showConfirmDelete('¿Eliminar plantilla?', `¿Estás seguro de eliminar la plantilla <strong>${model?.name}</strong>?`, async () => { db.models = db.models.filter(m => m.id !== id); await saveData(); renderModels(); updateProjectModels(); showToast('Plantilla eliminada'); });
+}
+
+function updateProjectModels() { const select = document.getElementById('pModel'); select.innerHTML = '<option value="">Seleccionar plantilla</option>' + db.models.map(m => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join(''); }
+
+// ========== PROYECTOS ==========
+function calcularCostoEstimadoModelo(modelId) {
+    const model = db.models.find(m => m.id === modelId);
+    if (!model) return 0;
+    let costoTotal = 0;
+    model.materialsIds.forEach(matId => {
+        const material = db.materials.find(m => m.id === matId);
+        if (material) {
+            const materialDetail = model.materialsList?.find(detail => detail.includes(material.name));
+            let cantidad = 1;
+            if (materialDetail) { const match = materialDetail.match(/(\d+(?:\.\d+)?)/); if (match) cantidad = parseFloat(match[1]); }
+            costoTotal += material.price * cantidad;
+        }
+    });
+    return costoTotal;
+}
+
+function proyectoDuplicado(nombre, idExcluir = null) { return db.projects.some(p => p.name.toLowerCase() === nombre.toLowerCase() && p.id !== idExcluir); }
+
+document.getElementById('formProject').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombre = document.getElementById('pName').value.trim();
+    const fechaInicio = document.getElementById('pDateStart').value;
+    const modelId = parseInt(document.getElementById('pModel').value);
+    const precioVenta = parseFloat(document.getElementById('pSalePrice').value);
+    const ubicacion = document.getElementById('pLocation').value.trim();
+    const estado = document.getElementById('pStatus').value;
+    if (!nombre) { showToast('El nombre de la obra es obligatorio', 'error'); return; }
+    if (!fechaInicio) { showToast('La fecha de inicio es obligatoria', 'error'); return; }
+    if (!modelId || isNaN(modelId)) { showToast('Debe seleccionar una plantilla', 'error'); return; }
+    if (!precioVenta || isNaN(precioVenta) || precioVenta <= 0) { showToast('Ingrese un precio de venta válido', 'error'); return; }
+    if (proyectoDuplicado(nombre)) { showToast('Ya existe un proyecto con ese nombre', 'error'); return; }
+    const costoEstimado = calcularCostoEstimadoModelo(modelId);
+    const nuevoProyecto = { id: Date.now(), name: nombre, location: ubicacion, dateStart: fechaInicio, modelId: modelId, salePrice: precioVenta, status: estado, progress: 0, estimatedCost: costoEstimado, estimatedProfit: precioVenta - costoEstimado, createdAt: new Date().toISOString() };
+    db.projects.push(nuevoProyecto);
+    await saveData();
+    renderProjects();
+    updateExpenseProjects();
+    updateCounts();
+    renderCharts();
+    e.target.reset();
+    document.getElementById('pModel').value = '';
+    document.getElementById('estimatedCost').innerText = '$0';
+    document.getElementById('estimatedDays').innerText = '-';
+    document.getElementById('estimatedProfit').innerHTML = '$0';
+    showToast('Proyecto creado correctamente');
+});
+
+function renderProjects() {
+    const container = document.getElementById('listProjects');
+    if (!container) return;
+    container.innerHTML = '';
+    if (db.projects.length === 0) { container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8">No hay proyectos creados</div>'; return; }
+    db.projects.forEach(p => {
+        const gastado = db.expenses.filter(e => Number(e.projectId) === Number(p.id)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        const ganancia = (p.salePrice || 0) - gastado;
+        const div = document.createElement('div');
+        div.className = 'bg-white rounded-xl p-4 shadow hover:shadow-md transition-shadow';
+        div.innerHTML = `<div class="flex justify-between items-start"><h4 class="font-bold text-lg">${escapeHtml(p.name)}</h4><span class="text-xs px-2 py-1 rounded-full ${p.status === 'Construccion' ? 'bg-orange-100 text-orange-800' : p.status === 'Finalizado' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">${p.status}</span></div><p class="text-sm text-gray-500 mt-1">📍 ${escapeHtml(p.location || 'Sin ubicación')} | 📅 ${p.dateStart}</p><div class="grid grid-cols-2 gap-2 text-sm mt-3"><div><span class="text-gray-500">Venta:</span> <span class="font-bold text-blue-600">$${(p.salePrice || 0).toLocaleString()}</span></div><div><span class="text-gray-500">Invertido:</span> <span class="font-bold text-red-600">$${gastado.toLocaleString()}</span></div><div class="col-span-2"><span class="text-gray-500">Ganancia:</span> <span class="font-bold ${ganancia >= 0 ? 'text-green-600' : 'text-red-600'}">$${ganancia.toLocaleString()}</span></div></div><div class="mt-3"><div class="flex justify-between text-xs mb-1"><span>Progreso</span><span>${p.progress}%</span></div><div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-green-500 h-2 rounded-full transition-all" style="width: ${p.progress}%"></div></div></div><div class="mt-3 flex gap-2"><button onclick="openProjectEditModal(${p.id})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-1.5 rounded text-sm transition-colors"><i class="fas fa-edit mr-1"></i> Editar</button><button onclick="deleteProject(${p.id})" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-1.5 rounded text-sm transition-colors"><i class="fas fa-trash mr-1"></i> Eliminar</button></div>`;
+        container.appendChild(div);
+    });
+}
+
+function openProjectEditModal(id) {
+    const p = db.projects.find(x => x.id === id);
+    if (!p) return;
+    currentProjectForEdit = p;
+    document.getElementById('modalProyectoTitle').innerHTML = `✏️ Editar: ${escapeHtml(p.name)}`;
+    document.getElementById('modalProyectoContent').innerHTML = `<div class="space-y-3"><div><label class="block text-sm font-medium mb-1">Nombre del proyecto</label><input type="text" id="editProjectName" value="${escapeHtml(p.name)}" class="border w-full p-2 rounded-lg"></div><div><label class="block text-sm font-medium mb-1">Estado</label><select id="editProjectStatus" class="border w-full p-2 rounded-lg"><option ${p.status === 'Pendiente' ? 'selected' : ''}>Pendiente</option><option ${p.status === 'Construccion' ? 'selected' : ''}>Construccion</option><option ${p.status === 'Finalizado' ? 'selected' : ''}>Finalizado</option></select></div><div><label class="block text-sm font-medium mb-1">Avance: <span id="progressValue">${p.progress}</span>%</label><input type="range" min="0" max="100" value="${p.progress}" id="editProjectProgress" class="w-full"></div><div><label class="block text-sm font-medium mb-1">Precio de venta</label><input type="number" id="editProjectSalePrice" value="${p.salePrice}" class="border w-full p-2 rounded-lg"></div></div>`;
+    document.getElementById('modalProyectoEdit').classList.remove('hidden');
+    document.getElementById('modalProyectoEdit').classList.add('flex');
+    document.getElementById('editProjectProgress').addEventListener('input', (e) => { document.getElementById('progressValue').innerText = e.target.value; });
+    document.getElementById('modalProyectoAction').onclick = async () => {
+        const nuevoNombre = document.getElementById('editProjectName').value.trim();
+        if (proyectoDuplicado(nuevoNombre, p.id)) { showToast('Ya existe un proyecto con ese nombre', 'error'); return; }
+        p.name = nuevoNombre;
+        p.status = document.getElementById('editProjectStatus').value;
+        p.progress = parseInt(document.getElementById('editProjectProgress').value);
+        p.salePrice = parseFloat(document.getElementById('editProjectSalePrice').value) || 0;
+        await saveData();
+        renderProjects();
+        updateCounts();
+        renderCharts();
+        cerrarModalProyecto();
+        showToast('Proyecto actualizado');
+    };
+}
+
+function cerrarModalProyecto() { document.getElementById('modalProyectoEdit').classList.add('hidden'); currentProjectForEdit = null; }
+
+async function deleteProject(id) {
+    const proyecto = db.projects.find(p => p.id === id);
+    if (!proyecto) return;
+    showConfirmDelete('¿Eliminar proyecto?', `¿Estás seguro de eliminar el proyecto <strong>${escapeHtml(proyecto.name)}</strong>?<br><span class="text-red-500">⚠️ Se eliminarán también todos los gastos asociados.</span>`, async () => { db.projects = db.projects.filter(p => p.id !== id); db.expenses = db.expenses.filter(e => Number(e.projectId) !== Number(id)); await saveData(); renderProjects(); updateExpenseProjects(); updateCounts(); renderCharts(); showToast(`Proyecto "${proyecto.name}" eliminado`); });
+}
+
+function calcularYMostrar() {
+    const modelId = parseInt(document.getElementById('pModel').value);
+    const model = db.models.find(m => m.id === modelId);
+    if (model && modelId) {
+        let costo = 0;
+        model.materialsIds.forEach(matId => {
+            const material = db.materials.find(m => m.id === matId);
+            if (material) {
+                const materialDetail = model.materialsList?.find(detail => detail.includes(material.name));
+                let cantidad = 1;
+                if (materialDetail) { const match = materialDetail.match(/(\d+(?:\.\d+)?)/); if (match) cantidad = parseFloat(match[1]); }
+                costo += material.price * cantidad;
+            }
+        });
+        const venta = parseFloat(document.getElementById('pSalePrice').value) || 0;
+        const ganancia = venta - costo;
+        document.getElementById('estimatedCost').innerText = '$' + costo.toLocaleString();
+        document.getElementById('estimatedDays').innerText = model.estimatedDays + ' días';
+        document.getElementById('estimatedProfit').innerHTML = ganancia >= 0 ? '<span class="text-green-600">$' + ganancia.toLocaleString() + '</span>' : '<span class="text-red-600">-$' + Math.abs(ganancia).toLocaleString() + '</span>';
+    } else {
+        document.getElementById('estimatedCost').innerText = '$0';
+        document.getElementById('estimatedDays').innerText = '-';
+        document.getElementById('estimatedProfit').innerHTML = '$0';
+    }
+}
+
+document.getElementById('pModel').addEventListener('change', calcularYMostrar);
+document.getElementById('pSalePrice').addEventListener('input', calcularYMostrar);
+
+// ========== GASTOS ==========
+document.getElementById('formExpense').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const projectValue = document.getElementById('eProject').value;
+    let projectId = null;
+    if (projectValue && projectValue !== "" && projectValue !== "General") projectId = Number(projectValue);
+    db.expenses.push({ id: Date.now(), date: new Date().toISOString().split('T')[0], description: document.getElementById('eDesc').value, amount: Number(document.getElementById('eAmount').value), category: document.getElementById('eCategory').value, projectId: projectId });
+    await saveData(); renderExpenses(); updateCounts(); renderCharts(); e.target.reset(); showToast('Gasto registrado');
+});
+
+function renderExpenses() {
+    const tbody = document.getElementById('tableExpenses');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    db.expenses.sort((a,b) => b.id - a.id).forEach(e => {
+        const proj = db.projects.find(p => Number(p.id) === Number(e.projectId));
+        const row = tbody.insertRow();
+        row.insertCell(0).innerHTML = e.date;
+        row.insertCell(1).innerHTML = e.description;
+        row.insertCell(2).innerHTML = `<span class="px-2 py-1 bg-gray-100 rounded text-xs">${e.category}</span>`;
+        row.insertCell(3).innerHTML = proj?.name || 'General';
+        row.insertCell(4).innerHTML = `$${Number(e.amount).toLocaleString()}`;
+        row.insertCell(5).innerHTML = `<button onclick="deleteExpense(${e.id})" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>`;
+    });
+}
+
+async function deleteExpense(id) {
+    const gasto = db.expenses.find(e => e.id === id);
+    showConfirmDelete('¿Eliminar gasto?', `¿Estás seguro de eliminar este gasto de <strong>$${gasto?.amount.toLocaleString()}</strong>?`, async () => { db.expenses = db.expenses.filter(e => e.id !== id); await saveData(); renderExpenses(); updateCounts(); renderCharts(); showToast('Gasto eliminado'); });
+}
+
+function updateExpenseProjects() { const select = document.getElementById('eProject'); select.innerHTML = '<option value="">General (sin proyecto)</option>' + db.projects.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join(''); }
+
+// ========== USUARIOS ==========
+function renderUsers() {
+    const tbody = document.getElementById('tableUsers');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    db.users.forEach((u, index) => {
+        const row = tbody.insertRow();
+        row.className = index % 2 === 0 ? 'table-row-light' : 'table-row-dark';
+        row.insertCell(0).innerHTML = u.name;
+        row.insertCell(1).innerHTML = u.username;
+        row.insertCell(2).innerHTML = `<span class="px-2 py-1 rounded text-xs ${u.role==='admin'?'bg-red-100 text-red-700':'bg-blue-100 text-blue-700'}">${u.role==='admin'?'Administrador':'Usuario'}</span>`;
+        row.insertCell(3).innerHTML = `<button onclick="openUserModal(${u.id})" class="text-gray-600 text-xl"><i class="fas fa-ellipsis-v"></i></button>`;
+        row.cells[3].className = 'p-3 text-center';
+    });
+}
+
+function openUserModal(id) {
+    const user = db.users.find(u => u.id === id);
+    if (!user) return;
+    currentUserForActions = user;
+    document.getElementById('modalUserName').innerText = user.name;
+    document.getElementById('modalUserDetails').innerHTML = `<div><strong>Usuario:</strong> ${user.username}</div><div><strong>Rol:</strong> ${user.role === 'admin' ? 'Administrador' : 'Usuario'}</div>`;
+    document.getElementById('modalUserActions').classList.remove('hidden');
+    document.getElementById('modalUserActions').classList.add('flex');
+    
+    document.getElementById('btnEditarUser').onclick = () => { cerrarModalUser(); editUser(id); };
+    document.getElementById('btnEliminarUser').onclick = () => { 
+        cerrarModalUser();
+        if (user.username === 'admin') { showToast('No se puede eliminar el usuario administrador principal', 'error'); return; }
+        showConfirmDelete('¿Eliminar usuario?', `¿Estás seguro de eliminar al usuario <strong>${user.name}</strong>?`, async () => { db.users = db.users.filter(u => u.id !== id); await saveData(); renderUsers(); showToast('Usuario eliminado'); });
+    };
+}
+
+function cerrarModalUser() { document.getElementById('modalUserActions').classList.add('hidden'); currentUserForActions = null; }
+
+function openNewUser() {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+    modal.innerHTML = `<div class="bg-white rounded-2xl shadow-2xl p-5 w-96 max-w-[90%] animate-slide-in"><h3 class="font-bold text-xl mb-4">👤 Nuevo Usuario</h3><input type="text" id="newName" placeholder="Nombre completo" class="border w-full p-2 rounded-lg mb-3"><input type="text" id="newUser" placeholder="Nombre de usuario" class="border w-full p-2 rounded-lg mb-3"><input type="password" id="newPass" placeholder="Contraseña" class="border w-full p-2 rounded-lg mb-3"><select id="newRole" class="border w-full p-2 rounded-lg mb-4"><option value="user">Usuario</option><option value="admin">Administrador</option></select><div class="flex gap-2"><button id="saveNew" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">Guardar</button><button id="cancelNew" class="flex-1 bg-gray-200 py-2 rounded-lg hover:bg-gray-300 transition-colors">Cancelar</button></div></div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('#saveNew').onclick = async () => {
+        const name = modal.querySelector('#newName').value, username = modal.querySelector('#newUser').value, password = modal.querySelector('#newPass').value, role = modal.querySelector('#newRole').value;
+        if(!name || !username || !password) { showToast('Complete todos los campos', 'error'); return; }
+        if(db.users.some(u => u.username === username)) { showToast('El nombre de usuario ya existe', 'error'); return; }
+        db.users.push({ id: Date.now(), name, username, password, role });
+        await saveData();
+        renderUsers();
+        modal.remove();
+        showToast('Usuario creado correctamente');
+    };
+    modal.querySelector('#cancelNew').onclick = () => modal.remove();
+}
+
+function editUser(id) {
+    const u = db.users.find(x => x.id === id);
+    if(!u) return;
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+    modal.innerHTML = `<div class="bg-white rounded-2xl shadow-2xl p-5 w-96 max-w-[90%] animate-slide-in"><h3 class="font-bold text-xl mb-4">✏️ Editar Usuario</h3><p class="text-gray-600 mb-3"><strong>Nombre:</strong> ${u.name}</p><p class="text-gray-600 mb-3"><strong>Usuario:</strong> ${u.username}</p><input type="password" id="passEdit" placeholder="Nueva contraseña (dejar vacío para no cambiar)" class="border w-full p-2 rounded-lg mb-3"><select id="roleEdit" class="border w-full p-2 rounded-lg mb-4"><option ${u.role==='user'?'selected':''} value="user">Usuario</option><option ${u.role==='admin'?'selected':''} value="admin">Administrador</option></select><div class="flex gap-2"><button id="saveEdit" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">Guardar</button><button id="cancelEdit" class="flex-1 bg-gray-200 py-2 rounded-lg hover:bg-gray-300 transition-colors">Cancelar</button></div></div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('#saveEdit').onclick = async () => {
+        const newPass = modal.querySelector('#passEdit').value;
+        const newRole = modal.querySelector('#roleEdit').value;
+        if(newPass && newPass.trim() !== '') u.password = newPass;
+        u.role = newRole;
+        await saveData();
+        renderUsers();
+        modal.remove();
+        showToast('Usuario actualizado');
+    };
+    modal.querySelector('#cancelEdit').onclick = () => modal.remove();
+}
+
+// ========== FUNCIONES AUXILIARES ==========
+function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+
+function showConfirmDelete(title, message, onConfirm) {
+    document.getElementById('confirmDeleteTitle').innerHTML = title;
+    document.getElementById('confirmDeleteMessage').innerHTML = message;
+    pendingDeleteCallback = onConfirm;
+    document.getElementById('modalConfirmDelete').classList.remove('hidden');
+    document.getElementById('modalConfirmDelete').classList.add('flex');
+}
+
+function closeConfirmDelete() { document.getElementById('modalConfirmDelete').classList.add('hidden'); pendingDeleteCallback = null; }
+document.getElementById('confirmDeleteCancel').onclick = () => closeConfirmDelete();
+document.getElementById('confirmDeleteAccept').onclick = () => { if (pendingDeleteCallback) pendingDeleteCallback(); closeConfirmDelete(); };
+
+function showConfirmPay(title, message, onConfirm) {
+    document.getElementById('confirmPayTitle').innerHTML = title;
+    document.getElementById('confirmPayMessage').innerHTML = message;
+    pendingPayCallback = onConfirm;
+    document.getElementById('modalConfirmPay').classList.remove('hidden');
+    document.getElementById('modalConfirmPay').classList.add('flex');
+}
+
+function closeConfirmPay() { document.getElementById('modalConfirmPay').classList.add('hidden'); pendingPayCallback = null; }
+document.getElementById('confirmPayCancel').onclick = () => closeConfirmPay();
+document.getElementById('confirmPayAccept').onclick = () => { if (pendingPayCallback) pendingPayCallback(); closeConfirmPay(); };
+
+// ========== PERSISTENCIA SUPABASE ==========
+async function saveData() { try { await supabaseClient.from('data').upsert({ id: 1, content: JSON.stringify(db) }); } catch(e) { console.error(e); showToast('Error al guardar', 'error'); } }
+
+async function loadData() {
+    try {
+        const { data } = await supabaseClient.from('data').select('content').eq('id', 1).single();
+        if (data && data.content) {
+            db = JSON.parse(data.content);
+            if (!db.users) db.users = [];
+            if (!db.workers) db.workers = [];
+            if (!db.materials) db.materials = [];
+            if (!db.models) db.models = [];
+            if (!db.projects) db.projects = [];
+            if (!db.expenses) db.expenses = [];
+            if (db.users.length === 0) db.users = [{ id: 1, name: "Administrador", username: "admin", password: "1234", role: "admin" }];
+        } else {
+            db = { users: [{ id: 1, name: "Administrador", username: "admin", password: "1234", role: "admin" }], workers: [], materials: [], models: [], projects: [], expenses: [] };
+            await saveData();
+        }
+    } catch(e) { console.error(e); showToast('Error de conexión, modo local', 'error'); if (db.users.length === 0) db.users = [{ id: 1, name: "Administrador", username: "admin", password: "1234", role: "admin" }]; }
+    finally {
+        document.getElementById('loadingScreen').classList.add('hidden');
+        const sesion = localStorage.getItem('sesionActiva') === 'true';
+        if (sesion) { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainApp').classList.remove('hidden'); }
+        else { document.getElementById('loginScreen').style.display = 'flex'; }
+        renderAll();
+    }
+}
+
+function renderAll() {
+    renderWorkers();
+    renderMaterials();
+    renderModels();
+    renderProjects();
+    renderExpenses();
+    renderUsers();
+    updateCounts();
+    renderCharts();
+    updateProjectModels();
+    updateExpenseProjects();
+    loadMaterialsForCheck();
+    
+    document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeWorkerDetailModal));
+    
+    document.getElementById('editWorkerBtn').addEventListener('click', () => {
+        if (!currentWorkerForDetail) return;
+        editingWorkerId = currentWorkerForDetail.id;
+        document.getElementById('wName').value = currentWorkerForDetail.name;
+        document.getElementById('wContact').value = currentWorkerForDetail.contact || '';
+        document.getElementById('wSalary').value = currentWorkerForDetail.salaryDay;
+        document.querySelector('#formWorker button').innerText = 'Actualizar';
+        closeWorkerDetailModal();
+    });
+    
+    document.getElementById('payWorkerBtn').addEventListener('click', () => {
+        if (!currentWorkerForDetail) return;
+        const total = (currentWorkerForDetail.daysWorked * currentWorkerForDetail.salaryDay) - (currentWorkerForDetail.advances||0) - (currentWorkerForDetail.discounts||0);
+        if (total <= 0) { showToast('Sin saldo pendiente', 'error'); return; }
+        showConfirmPay('Confirmar Pago', `¿Estás seguro de pagar <strong>$${total.toLocaleString()}</strong> a <strong>${currentWorkerForDetail.name}</strong>?`, async () => {
+            db.expenses.push({ id: Date.now(), date: new Date().toISOString().split('T')[0], description: `Sueldo: ${currentWorkerForDetail.name}`, amount: total, category: "ManoObra", projectId: null });
+            if (!currentWorkerForDetail.attendance) currentWorkerForDetail.attendance = {};
+            for (let fecha in currentWorkerForDetail.attendance) { if (currentWorkerForDetail.attendance[fecha] !== 'paid') { currentWorkerForDetail.attendance[fecha] = 'paid'; } }
+            currentWorkerForDetail.daysWorked = 0; currentWorkerForDetail.advances = 0; currentWorkerForDetail.discounts = 0;
+            await saveData();
+            renderWorkers(); renderExpenses(); updateCounts(); renderCharts();
+            closeWorkerDetailModal();
+            showToast(`Pagado $${total.toLocaleString()}`);
+        });
+    });
+    
+    document.getElementById('deleteWorkerBtn').addEventListener('click', () => {
+        if (!currentWorkerForDetail) return;
+        showConfirmDelete('¿Eliminar trabajador?', `¿Estás seguro de eliminar a <strong>${currentWorkerForDetail.name}</strong>?`, async () => { db.workers = db.workers.filter(w => w.id !== currentWorkerForDetail.id); await saveData(); renderWorkers(); closeWorkerDetailModal(); showToast('Trabajador eliminado'); });
+    });
+    
+    document.getElementById('addDiscountBtn').addEventListener('click', async () => {
+        if (!currentWorkerForDetail) return;
+        const motivo = prompt("Motivo del descuento:");
+        if (!motivo || motivo.trim() === "") { showToast("Debe ingresar un motivo", "error"); return; }
+        const monto = parseFloat(document.getElementById('newDiscountAmount').value);
+        if (isNaN(monto) || monto <= 0) { showToast('Monto inválido', 'error'); return; }
+        currentWorkerForDetail.discounts = (currentWorkerForDetail.discounts || 0) + monto;
+        if (!currentWorkerForDetail.discountHistory) currentWorkerForDetail.discountHistory = [];
+        currentWorkerForDetail.discountHistory.push({ date: new Date().toISOString().split('T')[0], amount: monto, reason: motivo.trim() });
+        await saveData();
+        const total = (currentWorkerForDetail.daysWorked * currentWorkerForDetail.salaryDay) - (currentWorkerForDetail.advances || 0) - currentWorkerForDetail.discounts;
+        document.getElementById('detailWorkerDiscounts').innerText = '$' + currentWorkerForDetail.discounts.toLocaleString();
+        document.getElementById('detailWorkerTotal').innerText = '$' + Math.max(0, total).toLocaleString();
+        document.getElementById('newDiscountAmount').value = '';
+        renderHistoryInModal();
+        showToast(`Descuento de $${monto.toLocaleString()} registrado`);
+    });
+    
     document.getElementById('formWorker').addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('wName').value;
         const contact = document.getElementById('wContact').value;
         const salary = parseFloat(document.getElementById('wSalary').value);
-
-        if(editingWorkerId) {
-            const w = db.workers.find(x => x.id === editingWorkerId);
-            if(w) { w.name = name; w.contact = contact; w.salaryDay = salary; }
+        if (!name || isNaN(salary)) { showToast('Complete los campos requeridos', 'error'); return; }
+        if (editingWorkerId) {
+            const idx = db.workers.findIndex(w => w.id === editingWorkerId);
+            if (idx !== -1) { db.workers[idx].name = name; db.workers[idx].contact = contact; db.workers[idx].salaryDay = salary; }
             editingWorkerId = null;
-            document.querySelector('#formWorker button').textContent = 'Guardar Trabajador';
-        } else {
-            db.workers.push({ id: Date.now(), name: name, contact: contact, salaryDay: salary, daysWorked: 0, advances: 0 });
-        }
-
-        await saveData(); renderWorkers(); updateCounts(); e.target.reset();
-        showToast('success', ' Listo', 'Trabajador guardado');
-    });
-
-    function renderWorkers() {
-    let totalNomina = 0;
-    document.getElementById('tableWorkers').innerHTML = db.workers.map(w => {
-        const total = (w.daysWorked * w.salaryDay) - w.advances;
-        totalNomina += total;
-        return `
-        <tr class="hover:bg-blue-50">
-            <td class="p-3">${w.name}<br><small>${w.contact || ''}</small></td>
-            <td class="p-3 text-right">$${w.salaryDay.toLocaleString()}</td>
-            <td class="p-3 text-center">
-                <div class="flex justify-center gap-2">
-                    <button onclick="changeDays(${w.id},-1)" class="w-7 h-7 bg-gray-200 rounded">-</button>
-                    <span class="font-bold">${w.daysWorked}</span>
-                    <button onclick="changeDays(${w.id},1)" class="w-7 h-7 bg-gray-200 rounded">+</button>
-                </div>
-            </td>
-            <td class="p-3 text-center">
-                <input type="number" 
-                       id="adv_${w.id}" 
-                       value="${w.advances || 0}" 
-                       class="w-20 p-1 border rounded text-center"
-                       onkeypress="if(event.key === 'Enter') saveAdvance(${w.id})">
-                <button onclick="saveAdvance(${w.id})" class="ml-1 text-green-600">
-                    <i class="fas fa-check"></i>
-                </button>
-            </td>
-            <td class="p-3 text-right font-bold text-green-700">$${total.toLocaleString()}</td>
-            <td class="p-3 text-center">
-                <button onclick="editWorker(${w.id})" class="text-blue-600 mr-2"><i class="fas fa-pencil"></i></button>
-                <button onclick="pagarTrabajador(${w.id})" class="text-green-600 mr-2"><i class="fas fa-money-bill"></i></button>
-                <button onclick="resetDias(${w.id})" class="text-orange-600 mr-2"><i class="fas fa-rotate-right"></i></button>
-                <!-- 👇 NUEVO BOTÓN ELIMINAR 👇 -->
-                <button onclick="deleteWorker(${w.id})" class="text-red-600"><i class="fas fa-trash"></i></button>
-            </td>
-        </tr>`;
-    }).join('');
-    document.getElementById('total-nomina').textContent = '$' + totalNomina.toLocaleString();
-}
-
-
-    function editWorker(id) {
-        const w = db.workers.find(x => x.id === id);
-        if(w) {
-            editingWorkerId = id;
-            document.getElementById('wName').value = w.name;
-            document.getElementById('wContact').value = w.contact || '';
-            document.getElementById('wSalary').value = w.salaryDay;
-            document.querySelector('#formWorker button').textContent = ' Guardar Cambios';
-        }
-    }
-
-    function pagarTrabajador(id) {
-    const w = db.workers.find(x => x.id === id);
-    if (!w) return;
-
-    const totalAPagar = (w.daysWorked * w.salaryDay) - (w.advances || 0);
-
-    if (totalAPagar <= 0) {
-        showToast('info', 'Sin deuda', 'No hay saldo pendiente para pagar');
-        return;
-    }
-
-    if (confirm(`¿Pagar total a ${w.name}?\nTotal: $${totalAPagar.toLocaleString()}`)) {
-        
-        // ✅ REGISTRAR EN GASTOS
-        db.expenses.push({
-            id: Date.now(),
-            date: new Date().toISOString().split('T')[0],
-            description: `Pago de nómina: ${w.name}`,
-            amount: totalAPagar,
-            category: "ManoObra",
-            projectId: null
-        });
-
-        // Reiniciar contadores
-        w.daysWorked = 0;
-        w.advances = 0;
-
-        saveData();
+            document.querySelector('#formWorker button').innerText = 'Guardar';
+        } else { db.workers.push({ id: Date.now(), name: name, contact: contact, salaryDay: salary, attendance: {}, advances: 0, discounts: 0 }); }
+        await saveData();
         renderWorkers();
-        renderExpenses();   // Actualizar lista de gastos
-        updateCounts();     // Actualizar Dashboard
-        renderCharts();     // Actualizar gráficos
-
-        showToast('success', '✅ Pagado', `Se registraron $${totalAPagar.toLocaleString()} en gastos`);
-    }
-}
-
-    function resetDias(id) {
-        const w = db.workers.find(x => x.id === id);
-        w.daysWorked = 0; w.advances = 0;
-        saveData(); renderWorkers();
-    }
-
-    function changeDays(id, amt){ 
-        const w=db.workers.find(x=>x.id==id); 
-        w.daysWorked=Math.max(0,w.daysWorked+amt); 
-        saveData(); renderWorkers(); 
-    }
-    
-    function saveAdvance(id) {
-        const w = db.workers.find(x => x.id === id);
-        const inputValor = parseFloat(document.getElementById(`adv_${id}`).value);
-        
-        if(!isNaN(inputValor) && inputValor >= 0) {
-            w.advances = inputValor;
-            saveData();
-            renderWorkers();
-            showToast('success', 'Adelanto Registrado', `Se guardó $${inputValor.toLocaleString()} para ${w.name}`);
-        } else {
-            document.getElementById(`adv_${id}`).value = w.advances || 0;
-        }
-    }
-
-    // ==== MATERIALES ====
-    document.getElementById('formMaterial').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        db.materials.push({
-            id:Date.now(),
-            name: document.getElementById('mName').value,
-            stock: parseFloat(document.getElementById('mStock').value),
-            price: parseFloat(document.getElementById('mPrice').value)
-        });
-        await saveData(); renderMaterials(); updateCounts(); e.target.reset();
-        showToast('success', 'Material Agregado', 'Inventario actualizado');
+        e.target.reset();
+        showToast(editingWorkerId ? 'Trabajador actualizado' : 'Trabajador agregado');
     });
-
-    function renderMaterials(){
-    let totalInv = 0;
-    document.getElementById('tableMaterials').innerHTML = db.materials.map(m => {
-        const totalMat = m.stock * m.price;
-        totalInv += totalMat
-        return `
-        <tr class="hover:bg-green-50">
-            <td class="p-3 font-medium">${m.name}</td>
-            <td class="p-3 text-center">${m.stock} u.</td>
-            <td class="p-3 text-right">$${m.price.toLocaleString()}</td>
-            <td class="p-3 text-right font-bold text-green-700">$${totalMat.toLocaleString()}</td>
-            <td class="p-3 text-center">
-                <button onclick="usarMaterial(${m.id})" class="text-blue-600 mr-2" title="Pasar a Gasto">
-                    <i class="fas fa-truck-loading"></i>
-                </button>
-                <button onclick="editMaterial(${m.id})" class="text-orange-600 mr-2">
-                    <i class="fas fa-pencil"></i>
-                </button>
-                <button onclick="deleteMaterial(${m.id})" class="text-red-600">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>`;
-    }).join('');
-    document.getElementById('total-inventario').textContent = '$' + totalInv.toLocaleString();
-}
-
-    // ==== MODELOS / PLANTILLAS ====
-    document.getElementById('formModel').addEventListener('submit', async (e) => {
-    e.preventDefault();
     
-    const selected = [];
-    const listDetails = [];
-    let hayError = false; // Bandera para saber si hubo error
-    
-    document.querySelectorAll('.mat-check:checked').forEach(check => {
-        const id = parseFloat(check.value);
-        const qty = parseFloat(document.getElementById(`qty_${id}`).value);
-        const mat = db.materials.find(m => m.id === id);
-        
-        if(mat) {
-            // ✅ NUEVA VALIDACIÓN DE STOCK
-            if(qty > mat.stock) {
-                hayError = true;
-                showToast('error', 'Stock Insuficiente', 
-                    `${mat.name}: Tienes ${mat.stock} u. e intentas poner ${qty} u.`);
-            } else if (!isNaN(qty) && qty > 0) {
-                selected.push(id);
-                listDetails.push(`• ${mat.name}: ${qty} u.`);
-            }
-        }
-    });
-
-    // Si hubo error, NO guardamos
-    if(hayError) {
-        return; // Cortamos la ejecución aquí
-    }
-
-    const listText = listDetails.join('\n');
-
-        // ✅ NUEVA LÓGICA DE GUARDADO
-    const dataModel = {
-        name: document.getElementById('modName').value,
-        size: document.getElementById('modSize').value,
-        estimatedDays: parseInt(document.getElementById('modDays').value),
-        desc: document.getElementById('modDesc').value,
-        materialsIds: selected,
-        materialsList: listDetails
-    };
-
-    const idEdicion = parseInt(document.getElementById('modId').value);
-
-    if(idEdicion) {
-        // ✅ SI ES EDICIÓN: ACTUALIZAR
-        const index = db.models.findIndex(m => m.id === idEdicion);
-        db.models[index] = { ...db.models[index], ...dataModel };
-        
-        showToast('success', 'Plantilla Actualizada', 'Cambios guardados');
-        document.getElementById('modId').value = ''; // Limpiar ID
-        document.getElementById('formModel').querySelector('h3').textContent = '➕ Nueva Plantilla';
-    } else {
-        // ✅ SI ES NUEVA: CREAR
-        db.models.push({ id: Date.now(), ...dataModel });
-        showToast('success', 'Plantilla Creada', 'Listo para usar');
-    }
-
-    await saveData(); renderModels(); updateProjectModels(); e.target.reset();
-    showToast('success', 'Plantilla Creada', 'Listo para usar');
-});
-
-
-    function renderModels(){
-    document.getElementById('listModels').innerHTML = db.models.map(m => {
-        return `
-        <div class="bg-white p-4 rounded-xl shadow">
-            <h4 class="font-bold text-lg">${m.name}</h4>
-            <p class="text-sm text-gray-500">${m.size} | ${m.estimatedDays} días</p>
-            <p class="text-sm mt-2 text-gray-600">${m.desc || 'Sin descripción'}</p>
-            
-            <div class="mt-3 border-t pt-3">
-                <p class="text-sm font-medium mb-2">Materiales:</p>
-                <div class="flex flex-wrap gap-1">
-                    ${m.materialsIds.map(id => {
-                        const mat = db.materials.find(x => x.id == id);
-                        return mat ? `<span class="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded">${mat.name}</span>` : '';
-                    }).join('')}
-                </div>
-            </div>
-            
-            <!-- 👇 AQUÍ LOS BOTONES 👇 -->
-            <div class="mt-4 flex gap-2">
-                <button onclick="openEditModel(${m.id})" 
-                        class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm">
-                    <i class="fas fa-edit"></i> Editar
-                </button>
-                <button onclick="deleteModel(${m.id})" 
-        class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600 flex-1">
-    <i class="fas fa-trash"></i> Borrar
-</button>
-            </div>
-        </div>`;
-    }).join('');
-}
-
-    function updateProjectModels(){
-        document.getElementById('pModel').innerHTML = '<option value="">Seleccionar Plantilla</option>' + db.models.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
-    }
-
-function openEditModel(id) {
-    const model = db.models.find(m => m.id === id);
-    if(!model) return;
-
-    // Cargar datos en el formulario
-    document.getElementById('modId').value = model.id; // Campo oculto para saber que es edición
-    document.getElementById('modName').value = model.name;
-    document.getElementById('modSize').value = model.size;
-    document.getElementById('modDays').value = model.estimatedDays;
-    document.getElementById('modDesc').value = model.desc || '';
-
-    // Marcar los materiales que ya estaban seleccionados
-    document.querySelectorAll('.mat-check').forEach(check => {
-        check.checked = model.materialsIds.includes(parseInt(check.value));
-        const input = document.getElementById(`qty_${check.value}`);
-        input.disabled = !check.checked;
-        if(!check.checked) input.value = '';
-    });
-
-    // Cambiar el título del formulario
-    document.getElementById('formModel').querySelector('h3').textContent = '✏️ Editar Plantilla';
-    
-    // Ir arriba del formulario
-    document.getElementById('formModel').scrollIntoView({behavior: 'smooth'});
-}
-  
-    // ==== PROYECTOS ====
-   document.getElementById('formProject').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const modelId = parseInt(document.getElementById('pModel').value);
-    const model = db.models.find(m => m.id === modelId);
-    
-    let costoCalculado = 0;
-    if(model) {
-        costoCalculado = model.materialsIds.reduce((s,id) => {
-            const m = db.materials.find(x=>x.id==id); 
-            return s + (m?.price || 0);
-        }, 0);
-    }
-    const precioVenta = parseFloat(document.getElementById('pSalePrice').value) || 0;
-
-    db.projects.push({
-        id: Date.now(),
-        name: document.getElementById('pName').value,
-        location: document.getElementById('pLocation').value,
-        dateStart: document.getElementById('pDateStart').value,
-        modelId: modelId,
-        salePrice: precioVenta,
-        status: document.getElementById('pStatus').value,
-        progress: 0,
-        estimatedCost: costoCalculado,
-        estimatedProfit: precioVenta - costoCalculado
-    });
-
-    await saveData(); 
-    renderProjects(); 
-    updateExpenseProjects();
-    
-    // ✅ IMPORTANTE: ACTUALIZAR DASHBOARD
-    updateCounts();
-    renderCharts();
-
-    e.target.reset();
-    document.getElementById('estimatedCost').textContent = '$0';
-    document.getElementById('estimatedDays').textContent = '-';
-    document.getElementById('estimatedProfit').textContent = '$0';
-    showToast('success', 'Proyecto Creado', 'Obra registrada');
-});
-
-    function renderProjects(){
-        document.getElementById('listProjects').innerHTML = db.projects.map(p => {
-            const gastado = db.expenses.filter(e=>e.projectId==p.id).reduce((s,e)=>s+e.amount,0);
-            const ganancia = p.salePrice - gastado;
-            return `
-            <div class="bg-white rounded-xl p-6 shadow">
-                <div class="flex justify-between items-start">
-                    <h4 class="font-bold text-lg">${p.name}</h4>
-                    <span class="text-xs px-2 py-1 rounded-full ${p.status=='Construccion'?'bg-orange-100 text-orange-700':p.status=='Finalizado'?'bg-green-100 text-green-700':'bg-gray-100'}">${p.status}</span>
-                </div>
-                <p class="text-sm text-gray-500"> ${p.location || 'Sin ubicación'} | ${p.dateStart}</p>
-                
-                <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
-                    <div>Presupuesto: <br><strong class="text-blue-600">$${p.estimatedCost?.toLocaleString()}</strong></div>
-                    <div>Invertido: <br><strong class="text-red-600">$${gastado.toLocaleString()}</strong></div>
-                    <div>Venta: <br><strong>$${p.salePrice?.toLocaleString()}</strong></div>
-                    <div>Ganancia: <br><strong class="text-green-600">$${ganancia.toLocaleString()}</strong></div>
-                </div>
-
-                <div class="mt-4">
-                    <p class="text-sm mb-1">Avance: ${p.progress}%</p>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-green-500 h-2 rounded-full" style="width:${p.progress}%"></div>
-                    </div>
-                </div>
-                <button onclick="openProjectDetails(${p.id})" class="mt-4 w-full bg-blue-600 text-white py-2 rounded">Ver / Editar</button>
-                <button onclick="deleteProject(${p.id})" class="mt-2 w-full bg-red-600 text-white py-2 rounded">Eliminar</button>
-
-            </div>`;
-        }).join('');
-    }
-
-    // ==== GASTOS ====
-    function updateExpenseProjects(){
-        document.getElementById('eProject').innerHTML = '<option value="">General / Sin proyecto</option>' + db.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-    }
-
-    document.getElementById('formExpense').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        db.expenses.push({
-            id:Date.now(),
-            date: new Date().toISOString().split('T')[0],
-            description: document.getElementById('eDesc').value,
-            amount: parseFloat(document.getElementById('eAmount').value),
-            category: document.getElementById('eCategory').value,
-            projectId: document.getElementById('eProject').value || null
-        });
-        await saveData(); renderExpenses(); renderCharts(); updateCounts(); e.target.reset();
-        showToast('success', 'Gasto Registrado', 'Finanzas actualizadas');
-    });
-
-    function renderExpenses() {
-    document.getElementById('tableExpenses').innerHTML = db.expenses.sort((a,b)=>b.id-a.id).map(e => {
-        const proj = db.projects.find(p=>p.id==e.projectId);
-        return `
-        <tr class="hover:bg-gray-50">
-            <td class="p-3">${e.date}</td>
-            <td class="p-3">${e.description}</td>
-            <td class="p-3"><span class="px-2 py-1 bg-gray-100 rounded text-xs">${e.category}</span></td>
-            <td class="p-3">${proj?.name || 'General'}</td>
-            <td class="p-3 font-bold text-red-600">$${e.amount.toLocaleString()}</td>
-            <!-- 👇 NUEVO BOTÓN ELIMINAR 👇 -->
-            <td class="p-3 text-center">
-                <button onclick="deleteExpense(${e.id})" class="text-red-600 hover:text-red-800">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>`;
-    }).join('');
-}
-
-function deleteExpense(id) {
-    const e = db.expenses.find(x => x.id === id);
-    if(!e) return;
-
-    const modal = document.createElement('div');
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
-    modal.innerHTML = `
-    <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-        <div style="font-size:60px; color:#ef4444; margin-bottom:15px;">
-            <i class="fas fa-receipt"></i>
-        </div>
-        <h3 style="margin:0 0 10px 0; font-size:22px; color:#1f2937;">¿Eliminar Gasto?</h3>
-        <p style="color:#6b7280; margin-bottom:25px;">¿Seguro que quieres borrar este registro de <strong>$${e.amount.toLocaleString()}</strong>?</p>
-        
-        <div style="display:flex; gap:15px; justify-content:center;">
-            <button id="cancelBtn" 
-                    style="padding:12px 25px; background:#e5e7eb; border:none; border-radius:10px; font-weight:500;">
-                Cancelar
-            </button>
-            <button id="deleteBtn" 
-                    style="padding:12px 25px; background:#ef4444; color:white; border:none; border-radius:10px; font-weight:500;">
-                <i class="fas fa-trash"></i> Sí, Eliminar
-            </button>
-        </div>
-    </div>
-    `;
-    document.body.appendChild(modal);
-
-    modal.querySelector('#cancelBtn').onclick = () => modal.remove();
-    modal.querySelector('#deleteBtn').onclick = () => {
-        db.expenses = db.expenses.filter(exp => exp.id !== id);
-        saveData(); renderExpenses(); updateCounts(); renderCharts();
-        modal.remove();
-        showToast('success', 'Eliminado', 'Gasto borrado');
-    };
-}
-
-
-    // ==== DASHBOARD Y ESTADÍSTICAS ====
-    function updateCounts() {
-    const totalInvertido = db.expenses.reduce((s,e)=>s+e.amount,0);
-    
-    // ✅ NUEVA FORMA DE CALCULAR GANANCIA
-    const totalGanado = db.projects.reduce((s,p) => {
-        // Si ya tiene gastos, usamos eso, si no, usamos lo estimado
-        const gastado = db.expenses.filter(e=>e.projectId==p.id).reduce((a,e)=>a+e.amount,0);
-        const costoReal = gastado > 0 ? gastado : (p.estimatedCost || 0);
-        return s + ((p.salePrice || 0) - costoReal);
-    }, 0);
-
-    const activos = db.projects.filter(p=>p.status=='Construccion').length;
-    const valorInv = db.materials.reduce((s,m)=> s + (m.stock*m.price),0);
-
-    document.getElementById('sum-expenses').textContent = '$' + totalInvertido.toLocaleString();
-    document.getElementById('sum-profit').textContent = '$' + totalGanado.toLocaleString();
-    document.getElementById('count-active-projects').textContent = activos;
-    document.getElementById('sum-materials').textContent = '$' + valorInv.toLocaleString();
-
-    // Gastos hoy y mes
-    const hoy = new Date();
-    const gastosHoy = db.expenses.filter(e => e.date == new Date().toISOString().split('T')[0]).reduce((s,e)=>s+e.amount,0);
-    const gastosMes = db.expenses.filter(e => {
-        if(!e.date) return false;
-        const d = new Date(e.date);
-        return d.getMonth() == hoy.getMonth() && d.getFullYear() == hoy.getFullYear();
-    }).reduce((s,e)=>s+e.amount,0);
-
-    document.getElementById('gasto-hoy').textContent = '$' + gastosHoy.toLocaleString();
-    document.getElementById('gasto-mes').textContent = '$' + gastosMes.toLocaleString();
-
-    // Proyecto mas costoso
-    const projMasCaro = db.projects.sort((a,b)=> {
-        const ga = db.expenses.filter(e=>e.projectId==a.id).reduce((s,e)=>s+e.amount,0) || (a.estimatedCost || 0);
-        const gb = db.expenses.filter(e=>e.projectId==b.id).reduce((s,e)=>s+e.amount,0) || (b.estimatedCost || 0);
-        return gb - ga;
-    })[0];
-    document.getElementById('proyecto-mayor').textContent = projMasCaro ? projMasCaro.name : '-';
-}
-
-
-    function renderCharts() {
-        if(charts.proj) charts.proj.destroy();
-        const ctx1 = document.getElementById('chartProjects').getContext('2d');
-        charts.proj = new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: db.projects.map(p=>p.name),
-                datasets: [{
-                    label: 'Inversión Actual $',
-                    data: db.projects.map(p => db.expenses.filter(e=>e.projectId==p.id).reduce((s,e)=>s+e.amount,0)),
-                    backgroundColor: '#165DFF'
-                }]
-            },
-            options: { responsive: true }
-        });
-
-        if(charts.cat) charts.cat.destroy();
-        const ctx2 = document.getElementById('chartExpenses').getContext('2d');
-        const cats = ['Materiales','ManoObra','Transporte','Herramientas','Imprevistos','Otros'];
-        charts.cat = new Chart(ctx2, {
-            type: 'doughnut',
-            data: {
-                labels: ['Materiales','Mano de Obra','Transporte','Herramientas','Imprevistos','Otros'],
-                datasets: [{
-                    data: cats.map(c => db.expenses.filter(e=>e.category==c).reduce((s,e)=>s+e.amount,0)),
-                    backgroundColor: ['#00B42A','#FF7D00','#165DFF','#64748b','#F53F3F','#9CA3AF']
-                }]
-            }
-        });
-    }
-
-    // ==== MODAL Y MENU ====
-    function openProjectDetails(id){
-        const p = db.projects.find(x=>x.id==id);
-        document.getElementById('modalTitle').textContent = p.name;
-        document.getElementById('modalBody').innerHTML = `
-        <div class="space-y-4">
-            <label>Estado:</label>
-            <select id="editStatus" class="w-full border p-2 rounded">
-                <option value="Pendiente" ${p.status=='Pendiente'?'selected':''}> Pendiente</option>
-                <option value="Construccion" ${p.status=='Construccion'?'selected':''}> En construcción</option>
-                <option value="Finalizado" ${p.status=='Finalizado'?'selected':''}> Finalizado</option>
-                <option value="Entregado" ${p.status=='Entregado'?'selected':''}> Entregado</option>
-            </select>
-            
-            <label>Avance: ${p.progress}%</label>
-            <input type="range" min="0" max="100" value="${p.progress}" id="editRange" class="w-full">
-        </div>
-        <button onclick="saveProjectEdit(${p.id})" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Guardar Cambios</button>
-        `;
-        document.getElementById('detailModal').classList.remove('hidden');
-    }
-    
-    function saveProjectEdit(id){
-    const p = db.projects.find(x=>x.id==id);
-    p.status = document.getElementById('editStatus').value;
-    p.progress = parseInt(document.getElementById('editRange').value);
-    
-    saveData(); 
-    renderProjects(); 
-    closeModal();
-    
-    // ✅ IMPORTANTE: ACTUALIZAR DASHBOARD
-    updateCounts();
-    renderCharts();
-    
-    showToast('success','Actualizado','Proyecto modificado');
-}
-    function closeModal(){ document.getElementById('detailModal').classList.add('hidden'); }
-
-    //---FUNCION EXPORTAR EXEL---
-    function exportarExcel() {
-        try {
-            var wb = XLSX.utils.book_new();
-
-            var datosTrabajadores = [
-                ["NOMBRE", "CONTACTO", "SALARIO DIARIO"],
-                ...db.workers.map(w => [
-                    w.name || '',
-                    w.contact || '',
-                    '$' + (w.salaryDay || 0).toLocaleString()
-                ])
-            ];
-            var wsT = XLSX.utils.aoa_to_sheet(datosTrabajadores);
-            XLSX.utils.book_append_sheet(wb, wsT, "Trabajadores");
-
-            var datosMateriales = [
-                ["MATERIAL", "PRECIO"],
-                ...db.materials.map(m => [
-                    m.name || '',
-                    '$' + (m.price || 0).toLocaleString()
-                ])
-            ];
-            var wsM = XLSX.utils.aoa_to_sheet(datosMateriales);
-            XLSX.utils.book_append_sheet(wb, wsM, "Materiales");
-
-            var datosProyectos = [
-                ["NOMBRE", "UBICACIÓN", "FECHA INICIO", "ESTADO"],
-                ...db.projects.map(p => [
-                    p.name || '',
-                    p.location || '',
-                    p.date || '',
-                    p.status || ''
-                ])
-            ];
-            var wsP = XLSX.utils.aoa_to_sheet(datosProyectos);
-            XLSX.utils.book_append_sheet(wb, wsP, "Proyectos");
-
-            var datosGastos = [
-                ["DESCRIPCIÓN", "MONTO", "FECHA"],
-                ...db.expenses.map(g => [
-                    g.description || '',
-                    '$' + (g.amount || 0).toLocaleString(),
-                    g.date || ''
-                ])
-            ];
-            var wsG = XLSX.utils.aoa_to_sheet(datosGastos);
-            XLSX.utils.book_append_sheet(wb, wsG, "Gastos");
-
-            XLSX.writeFile(wb, 'Reporte_Gestion_Obras.xlsx');
-            showToast('success', '✅ Excel Generado', 'Archivo listo');
-        } catch (err) {
-            console.error(err);
-            showToast('error', '❌ Error', 'No se pudo generar');
-        }
-    }
-
-    function exportarPDF() {
-    try {
-        const { jsPDF } = window.jspdf;
-        if (!jsPDF) {
-            showToast('error', 'Error', 'No se cargó la librería');
-            return;
-        }
-        const doc = new jsPDF('p', 'mm', 'a4');
-
-        function limpiar(texto) {
-            return String(texto).normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-        }
-
-        // TITULO
-        doc.setFontSize(18);
-        doc.setTextColor('#000000');
-        doc.text('REPORTE DE GESTION DE OBRAS', 105, 20, null, null, 'center');
-        doc.setFontSize(10);
-        doc.text('Generado: ' + new Date().toLocaleDateString(), 14, 28);
-
-        let y = 40;
-
-        // ==================================
-        // SECCION 1: TRABAJADORES
-        // ==================================
-        doc.setFontSize(14);
-        doc.setTextColor('#00468C');
-        doc.text('TRABAJADORES', 14, y);
-        y += 5;
-
-        doc.setFillColor('#00468C');
-        doc.rect(14, y, 180, 8, 'F');
-        doc.setTextColor('#FFFFFF');
-        doc.setFontSize(9);
-        doc.text('Nombre', 16, y + 6);
-        doc.text('Contacto', 70, y + 6);
-        doc.text('Sueldo', 140, y + 6);
-        y += 8;
-
-        doc.setTextColor('#000000');
-        db.workers.forEach(w => {
-            if (y > 270) { doc.addPage(); y = 20; }
-            doc.rect(14, y, 180, 8);
-            doc.text(limpiar(w.name), 16, y + 6);
-            doc.text(limpiar(w.contact || ''), 70, y + 6);
-            doc.text('$' + (w.salaryDay || 0).toLocaleString(), 140, y + 6);
-            y += 8;
-        });
-
-        y += 10;
-
-        // ==================================
-        // SECCION 2: MATERIALES
-        // ==================================
-        if (y > 250) { doc.addPage(); y = 20; }
-        doc.setFontSize(14);
-        doc.setTextColor('#007849');
-        doc.text('MATERIALES', 14, y);
-        y += 5;
-
-        doc.setFillColor('#007849');
-        doc.rect(14, y, 180, 8, 'F');
-        doc.setTextColor('#FFFFFF');
-        doc.text('Material', 16, y + 6);
-        doc.text('Stock', 100, y + 6);
-        doc.text('Precio', 140, y + 6);
-        y += 8;
-
-        doc.setTextColor('#000000');
-        db.materials.forEach(m => {
-            if (y > 270) { doc.addPage(); y = 20; }
-            doc.rect(14, y, 180, 8);
-            doc.text(limpiar(m.name), 16, y + 6);
-            doc.text(String(m.stock), 100, y + 6);
-            doc.text('$' + (m.price || 0).toLocaleString(), 140, y + 6);
-            y += 8;
-        });
-
-        y += 10;
-
-        // ==================================
-        // SECCION 3: PROYECTOS
-        // ==================================
-        if (y > 250) { doc.addPage(); y = 20; }
-        doc.setFontSize(14);
-        doc.setTextColor('#B45309');
-        doc.text('PROYECTOS', 14, y);
-        y += 5;
-
-        doc.setFillColor('#B45309');
-        doc.rect(14, y, 180, 8, 'F');
-        doc.setTextColor('#FFFFFF');
-        doc.text('Nombre', 16, y + 6);
-        doc.text('Estado', 90, y + 6);
-        doc.text('Venta', 140, y + 6);
-        y += 8;
-
-        doc.setTextColor('#000000');
-        db.projects.forEach(p => {
-            if (y > 270) { doc.addPage(); y = 20; }
-            doc.rect(14, y, 180, 8);
-            doc.text(limpiar(p.name), 16, y + 6);
-            doc.text(limpiar(p.status || ''), 90, y + 6);
-            doc.text('$' + (p.salePrice || 0).toLocaleString(), 140, y + 6);
-            y += 8;
-        });
-
-        y += 15;
-
-        // ==================================
-        // SECCION 4: RESUMEN FINANCIERO
-        // ==================================
-        if (y > 230) { doc.addPage(); y = 20; }
-
-        doc.setFontSize(14);
-        doc.setTextColor('#7E22CE'); // Morado
-        doc.text('RESUMEN FINANCIERO', 14, y);
-        y += 8;
-
-        doc.setFillColor('#EDE9FE'); // Fondo claro
-        doc.roundedRect(14, y, 180, 50, 3, 3, 'F');
-        doc.setTextColor('#000000');
-        doc.setFontSize(11);
-
-        // Cálculos (ajusta los nombres de las variables según tu base de datos)
-        const totalIngresos = db.projects.reduce((sum, p) => sum + (p.salePrice || 0), 0);
-        const totalGastos = db.projects.reduce((sum, p) => sum + (p.cost || 0), 0) + 
-                           db.workers.reduce((sum, w) => sum + (w.salaryDay || 0), 0) +
-                           db.materials.reduce((sum, m) => sum + (m.price * m.stock || 0), 0);
-        const gananciaNeta = totalIngresos - totalGastos;
-
-        doc.text('Total Ingresos:', 20, y + 10);
-        doc.text('$' + totalIngresos.toLocaleString(), 140, y + 10);
-
-        doc.text('Total Gastos:', 20, y + 20);
-        doc.text('$' + totalGastos.toLocaleString(), 140, y + 20);
-
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text('GANANCIA NETA:', 20, y + 35);
-        doc.setTextColor(gananciaNeta >= 0 ? '#007849' : '#DC2626'); // Verde si es positivo, Rojo si es negativo
-        doc.text('$' + gananciaNeta.toLocaleString(), 140, y + 35);
-
-        // ==================================
-        // GUARDAR
-        // ==================================
-        doc.save('Reporte_Obras.pdf');
-        showToast('success', '✅ PDF Generado', 'Descarga completa');
-
-    } catch (error) {
-        console.error('ERROR:', error);
-        showToast('error', '❌ Error', 'Revisa consola F12');
-        alert('Error: ' + error.message);
-    }
-}
-
-    // ==== LOGIN Y SESIÓN ====
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const user = db.users.find(u => u.username === document.getElementById('loginUser').value && u.password === document.getElementById('loginPass').value);
-        if(user) {
-            currentUser = user;
-            localStorage.setItem('sesionActiva', 'true');
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            showToast('success', '¡Bienvenido!', 'Acceso correcto');
-        } else {
-            showToast('error', 'Error', 'Usuario o contraseña incorrectos');
-        }
-    });
-
-    function logout() {
-        currentUser = null;
-        localStorage.removeItem('sesionActiva');
-        document.getElementById('loginScreen').classList.remove('hidden');
-        document.getElementById('mainApp').classList.add('hidden');
-    }
-
-    // ==== INICIALIZAR ====
-    function renderAll() {
-        renderWorkers(); renderMaterials();
-        renderModels(); updateProjectModels();
-        renderProjects(); updateExpenseProjects();
-        renderExpenses(); updateCounts(); renderCharts();
-        renderUsers();
-    }
-
-    // ==== MENÚ LATERAL ====
-    document.getElementById('menuToggle').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('-translate-x-full');
-    });
-
-    document.addEventListener('click', (e) => {
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.getElementById('menuToggle');
-        
-        if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
-            sidebar.classList.add('-translate-x-full');
-        }
-    });
-
-    // Navegación
+    document.getElementById('menuToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -1319,598 +1250,24 @@ function deleteExpense(id) {
             const section = link.dataset.section;
             document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
             document.getElementById(section).classList.remove('hidden');
-            document.getElementById('sectionTitle').textContent = link.textContent.trim();
+            document.getElementById('sectionTitle').innerText = link.innerText.trim();
             document.getElementById('sidebar').classList.add('-translate-x-full');
+            if (section === 'modelos') loadMaterialsForCheck();
         });
     });
-    
-    document.querySelectorAll('#pDateStart').forEach(input => {
-      const span = document.getElementById('datePlaceholder');
-      input.addEventListener('input', () => {
-      span.style.display = input.value ? 'none' : 'block';
-      });
-    });
-    
-    // ==== FUNCIONES DE MATERIALES ====
-    function editMaterial(id) {
-        const m = db.materials.find(x => x.id === id);
-        if(m) {
-            const nuevoStock = prompt("Modificar cantidad actual:", m.stock);
-            if(nuevoStock !== null && !isNaN(nuevoStock)) {
-                m.stock = parseFloat(nuevoStock);
-                saveData(); renderMaterials();
-            }
-        }
-    }
-
-    function deleteMaterial(id) {
-    const mat = db.materials.find(x => x.id === id);
-    if(!mat) return;
-
-    const modal = document.createElement('div');
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
-    modal.innerHTML = `
-    <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-        <div style="font-size:60px; color:#ef4444; margin-bottom:15px;">
-            <i class="fas fa-box"></i>
-        </div>
-        <h3 style="margin:0 0 10px 0; font-size:22px; color:#1f2937;">¿Eliminar Material?</h3>
-        <p style="color:#6b7280; margin-bottom:25px;">¿Seguro que quieres borrar <strong>${mat.name}</strong> del inventario?</p>
-        
-        <div style="display:flex; gap:15px; justify-content:center;">
-            <button id="cancelBtn" 
-                    style="padding:12px 25px; background:#e5e7eb; border:none; border-radius:10px; font-weight:500;">
-                Cancelar
-            </button>
-            <button id="deleteBtn" 
-                    style="padding:12px 25px; background:#ef4444; color:white; border:none; border-radius:10px; font-weight:500;">
-                <i class="fas fa-trash"></i> Sí, Eliminar
-            </button>
-        </div>
-    </div>
-    `;
-    document.body.appendChild(modal);
-
-    modal.querySelector('#cancelBtn').onclick = () => modal.remove();
-    modal.querySelector('#deleteBtn').onclick = () => {
-        db.materials = db.materials.filter(m => m.id !== id);
-        saveData(); renderMaterials();
-        modal.remove();
-        showToast('success', 'Eliminado', 'Material borrado');
-    };
 }
 
-    function usarMaterial(id) {
-    const mat = db.materials.find(x => x.id === id);
-    if(!mat) return;
+// ========== LOGIN ==========
+document.getElementById('loginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const user = db.users.find(u => u.username === document.getElementById('loginUser').value && u.password === document.getElementById('loginPass').value);
+    if (user) { currentUser = user; localStorage.setItem('sesionActiva', 'true'); document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainApp').classList.remove('hidden'); showToast('Bienvenido'); }
+    else { showToast('Usuario o contraseña incorrectos', 'error'); }
+});
 
-    // 👇 CREAMOS EL MENÚ EMERGENTE PERSONALIZADO
-    const proyectosOptions = db.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-    
-    const contenido = `
-        <div style="text-align: left; line-height: 2.5;">
-            <label><strong>Material:</strong> ${mat.name} (Stock: ${mat.stock})</label>
-            
-            <label><strong>Cantidad a usar:</strong></label>
-            <input type="number" id="cantidadInput" 
-                   style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;" 
-                   placeholder="Escribe la cantidad" min="1" max="${mat.stock}">
+function logout() { currentUser = null; localStorage.removeItem('sesionActiva'); document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('mainApp').classList.add('hidden'); }
 
-            <label><strong>Seleccionar Proyecto:</strong></label>
-            <select id="proyectoSelect" 
-                    style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
-                <option value="">-- GASTO GENERAL --</option>
-                ${proyectosOptions}
-            </select>
-        </div>
-    `;
-
-    // Usamos un prompt personalizado con estilo
-    const ventana = document.createElement('div');
-    ventana.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
-    ventana.innerHTML = `
-        <div style="background:white; padding:25px; border-radius:12px; width:90%; max-width:350px;">
-            <h3 style="margin-top:0;">Pasar a Gastos</h3>
-            ${contenido}
-            <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end;">
-                <button id="btnCancelar" style="padding:10px 20px; background:#ccc; border:none; border-radius:6px;">Cancelar</button>
-                <button id="btnAceptar" style="padding:10px 20px; background:#165DFF; color:white; border:none; border-radius:6px;">Aceptar</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(ventana);
-
-    // Lógica de botones
-    ventana.querySelector('#btnCancelar').onclick = () => ventana.remove();
-    ventana.querySelector('#btnAceptar').onclick = () => {
-        const cantidad = parseFloat(ventana.querySelector('#cantidadInput').value);
-        const proyectoId = ventana.querySelector('#proyectoSelect').value;
-        const proyecto = db.projects.find(p => p.id == proyectoId);
-
-        // Validaciones
-        if(isNaN(cantidad) || cantidad <= 0){
-            alert('Por favor escribe una cantidad válida');
-            return;
-        }
-        if(cantidad > mat.stock){
-            showToast('error', 'Error', 'No tienes suficiente stock');
-            return;
-        }
-
-        const montoTotal = cantidad * mat.price;
-
-        // Descontar stock
-        mat.stock -= cantidad;
-        if(mat.stock <= 0) {
-            db.materials = db.materials.filter(x => x.id !== id);
-        }
-
-        // Agregar a gastos
-        db.expenses.push({
-            id: Date.now(),
-            date: new Date().toISOString().split('T')[0],
-            description: `Material: ${mat.name} (${cantidad} u.)`,
-            amount: montoTotal,
-            category: "Materiales",
-            projectId: proyectoId || null
-        });
-
-        saveData();
-        renderMaterials();
-        renderExpenses();
-        renderProjects();
-        updateCounts();
-        renderCharts();
-
-        showToast('success', '✅ Movimiento realizado', 
-            `Se usó $${montoTotal.toLocaleString()} en ${proyecto ? proyecto.name : 'Gasto General'}`);
-
-        ventana.remove();
-    };
-}
-
-    // ==== CARGA DE MATERIALES EN PLANTILLAS ====
-    function loadMaterialsForCheck() {
-        const container = document.getElementById('materialsCheckList');
-        if(!container) return; // Evita error si el div no existe
-        container.innerHTML = '';
-        
-        db.materials.forEach(mat => {
-            const div = document.createElement('div');
-            div.className = "flex items-center gap-2 bg-white p-2 rounded border";
-            div.innerHTML = `
-                <input type="checkbox" class="mat-check" value="${mat.id}" id="check_${mat.id}">
-                <label for="check_${mat.id}" class="flex-1 text-sm">${mat.name}</label>
-                <input type="number" placeholder="Cantidad" id="qty_${mat.id}" 
-                       class="w-20 p-1 border rounded text-sm text-center" disabled>
-            `;
-            
-            div.querySelector('.mat-check').addEventListener('change', function() {
-                const input = document.getElementById(`qty_${mat.id}`);
-                input.disabled = !this.checked;
-                if(!this.checked) input.value = '';
-            });
-            
-            container.appendChild(div);
-        });
-    }
-
-    // Cargar materiales al entrar a la sección
-    document.querySelector('.nav-link[data-section="modelos"]').addEventListener('click', loadMaterialsForCheck);
-
-
-function deleteProject(id) {
-    const p = db.projects.find(x => x.id === id);
-    if(!p) return;
-
-    const modal = document.createElement('div');
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
-    modal.innerHTML = `
-    <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-        <div style="font-size:60px; color:#ef4444; margin-bottom:15px;">
-            <i class="fas fa-building"></i>
-        </div>
-        <h3 style="margin:0 0 10px 0; font-size:22px; color:#1f2937;">¿Eliminar Proyecto?</h3>
-        <p style="color:#6b7280; margin-bottom:25px;">¿Seguro que quieres borrar el proyecto <strong>${p.name}</strong>?<br>Se eliminarán todos los datos asociados.</p>
-        
-        <div style="display:flex; gap:15px; justify-content:center;">
-            <button id="cancelBtn" 
-                    style="padding:12px 25px; background:#e5e7eb; border:none; border-radius:10px; font-weight:500;">
-                Cancelar
-            </button>
-            <button id="deleteBtn" 
-                    style="padding:12px 25px; background:#ef4444; color:white; border:none; border-radius:10px; font-weight:500;">
-                <i class="fas fa-trash"></i> Sí, Eliminar
-            </button>
-        </div>
-    </div>
-    `;
-    document.body.appendChild(modal);
-
-    modal.querySelector('#cancelBtn').onclick = () => modal.remove();
-    modal.querySelector('#deleteBtn').onclick = () => {
-        db.projects = db.projects.filter(pr => pr.id !== id);
-        saveData(); renderProjects(); updateCounts();
-        modal.remove();
-        showToast('success', 'Eliminado', 'Proyecto borrado correctamente');
-    };
-}
-
-// 🚀 FORZA DE ACTUALIZACIÓN - SOLO ESTE CÓDIGO
-function calcularYMostrar() {
-    const select = document.getElementById('pModel');
-    if(!select) return;
-
-    const modelId = parseInt(select.value);
-    const model = db.models.find(m => m.id === modelId);
-
-    if(model) {
-        let costo = 0;
-        model.materialsIds.forEach(id => {
-            const mat = db.materials.find(m => m.id === id);
-            if(mat) costo += mat.price;
-        });
-
-        const venta = parseFloat(document.getElementById('pSalePrice').value) || 0;
-        const ganancia = venta - costo;
-
-        // ✅ ACTUALIZACIÓN FORZADA
-        document.getElementById('estimatedCost').textContent = '$' + costo.toLocaleString();
-        document.getElementById('estimatedDays').textContent = model.estimatedDays + ' días';
-        document.getElementById('estimatedProfit').textContent = '$' + ganancia.toLocaleString();
-        
-    } else {
-        document.getElementById('estimatedCost').textContent = '$0';
-        document.getElementById('estimatedDays').textContent = '-';
-        document.getElementById('estimatedProfit').textContent = '$0';
-    }
-}
-
-// Conectar al selector
-document.getElementById('pModel').addEventListener('change', calcularYMostrar);
-document.getElementById('pSalePrice').addEventListener('input', calcularYMostrar);
-
-function pagarSalario(id) {
-    const trabajador = db.workers.find(w => w.id === id);
-    if (!trabajador) return;
-
-    const cantidad = parseFloat(trabajador.salaryDay);
-    
-    if(confirm(`¿Pagar sueldo a ${trabajador.name}?\nMonto: $${cantidad.toLocaleString()}`)) {
-        
-        // ✅ AGREGAR A GASTOS
-        db.expenses.push({
-            id: Date.now(),
-            date: new Date().toISOString().split('T')[0],
-            description: `Sueldo: ${trabajador.name}`,
-            amount: cantidad,
-            category: "ManoObra", // Categoría Mano de Obra
-            projectId: null // Gasto general
-        });
-
-        saveData();
-        renderExpenses();   // Actualizar lista de gastos
-        updateCounts();     // Actualizar Dashboard
-        renderCharts();     // Actualizar gráficos
-
-        showToast('success', '✅ Pagado', `Sueldo de $${cantidad.toLocaleString()} registrado`);
-    }
-}
-
-function renderUsers() {
-    document.getElementById('tableUsers').innerHTML = db.users.map(u => {
-        return `
-        <tr class="hover:bg-gray-50 border-b">
-            <td class="p-3">${u.name}</td>
-            <td class="p-3">${u.username}</td>
-            <td class="p-3">
-                <span class="px-2 py-1 rounded text-xs ${u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">
-                    ${u.role === 'admin' ? 'Administrador' : 'Usuario'}
-                </span>
-            </td>
-            <td class="p-3 text-center">
-                <button onclick="editUser(${u.id})" class="text-blue-600 mr-2" title="Editar">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button onclick="deleteUser(${u.id})" class="text-red-600" title="Eliminar">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>`;
-    }).join('');
-}
-
-// Funciones de los botones
-function deleteUser(id) {
-    const u = db.users.find(x => x.id === id);
-    if(!u) return;
-
-    const modal = document.createElement('div');
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
-    modal.innerHTML = `
-    <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-        <div style="font-size:60px; color:#ef4444; margin-bottom:15px;">
-            <i class="fas fa-user-slash"></i>
-        </div>
-        <h3 style="margin:0 0 10px 0; font-size:22px; color:#1f2937;">¿Eliminar Usuario?</h3>
-        <p style="color:#6b7280; margin-bottom:25px;">¿Seguro que quieres quitar el acceso a <strong>${u.name}</strong>?</p>
-        
-        <div style="display:flex; gap:15px; justify-content:center;">
-            <button id="cancelBtn" 
-                    style="padding:12px 25px; background:#e5e7eb; border:none; border-radius:10px; font-weight:500;">
-                Cancelar
-            </button>
-            <button id="deleteBtn" 
-                    style="padding:12px 25px; background:#ef4444; color:white; border:none; border-radius:10px; font-weight:500;">
-                <i class="fas fa-trash"></i> Sí, Eliminar
-            </button>
-        </div>
-    </div>
-    `;
-    document.body.appendChild(modal);
-
-    modal.querySelector('#cancelBtn').onclick = () => modal.remove();
-    modal.querySelector('#deleteBtn').onclick = () => {
-        db.users = db.users.filter(usr => usr.id !== id);
-        saveData(); renderUsers();
-        modal.remove();
-        showToast('success', 'Eliminado', 'Usuario borrado');
-    };
-}
-
-function editUser(id) {
-    const u = db.users.find(x => x.id === id);
-    if(!u) return;
-
-    // Crear el modal visual
-    const modal = document.createElement('div');
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
-    modal.innerHTML = `
-        <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-            <h3 style="margin-top:0; color:#1e40af; font-size:20px;">🔐 Editar Usuario</h3>
-            <p style="color:#6b7280; margin-bottom:20px;">Usuario: <strong>${u.name}</strong></p>
-            
-            <label style="display:block; margin-bottom:8px; font-weight:500;">Nueva Contraseña</label>
-            <input type="password" id="newPassInput" 
-                   placeholder="Dejar en blanco para no cambiar"
-                   style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; font-size:16px;">
-
-            <label style="display:block; margin:20px 0 8px 0; font-weight:500;">Rol de Acceso</label>
-            <select id="newRoleSelect" 
-                    style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; font-size:16px;">
-                <option value="user" ${u.role === 'user' ? 'selected' : ''}>👤 Usuario Normal</option>
-                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>👑 Administrador</option>
-            </select>
-
-            <div style="display:flex; gap:10px; margin-top:25px; justify-content:flex-end;">
-                <button id="btnCancel" 
-                        style="padding:10px 20px; background:#e5e7eb; border:none; border-radius:8px; font-weight:500;">
-                    Cancelar
-                </button>
-                <button id="btnSave" 
-                        style="padding:10px 20px; background:#165DFF; color:white; border:none; border-radius:8px; font-weight:500;">
-                    Guardar Cambios
-                </button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // Acciones de los botones
-    modal.querySelector('#btnCancel').onclick = () => modal.remove();
-    
-    modal.querySelector('#btnSave').onclick = () => {
-        const nuevaPass = modal.querySelector('#newPassInput').value.trim();
-        const nuevoRol = modal.querySelector('#newRoleSelect').value;
-        
-        // Cambiar rol siempre
-        u.role = nuevoRol;
-
-        // Cambiar contraseña solo si escribieron algo
-        if(nuevaPass !== "") {
-            u.password = nuevaPass;
-        }
-
-        saveData();
-        renderUsers();
-        modal.remove();
-        
-        showToast('success', '✅ Actualizado', 'Usuario modificado correctamente');
-    };
-}
-
-
-function openNewUser() {
-    const modal = document.createElement('div');
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
-    modal.innerHTML = `
-        <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:450px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-            <h3 style="margin-top:0; color:#1e40af; font-size:22px;">➕ Crear Nuevo Usuario</h3>
-            
-            <label>Nombre Completo</label>
-            <input type="text" id="newUserName" placeholder="Ej: Juan Pérez"
-                   style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; margin:8px 0 16px 0;">
-
-            <label>Nombre de Usuario</label>
-            <input type="text" id="newUserUser" placeholder="Ej: juanperez"
-                   style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; margin:8px 0 16px 0;">
-
-            <label>Contraseña</label>
-            <input type="password" id="newUserPass" placeholder="Escribe una contraseña"
-                   style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; margin:8px 0 16px 0;">
-
-            <label>Rol de Acceso</label>
-            <select id="newUserRole" 
-                    style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px; margin:8px 0 20px 0;">
-                <option value="user">👤 Usuario Normal</option>
-                <option value="admin">👑 Administrador</option>
-            </select>
-
-            <div style="display:flex; gap:10px; justify-content:flex-end;">
-                <button id="btnCancel" 
-                        style="padding:10px 20px; background:#e5e7eb; border:none; border-radius:8px; font-weight:500;">
-                    Cancelar
-                </button>
-                <button id="btnSave" 
-                        style="padding:10px 20px; background:#165DFF; color:white; border:none; border-radius:8px; font-weight:500;">
-                    Guardar Usuario
-                </button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    modal.querySelector('#btnCancel').onclick = () => modal.remove();
-    
-    modal.querySelector('#btnSave').onclick = () => {
-        const name = modal.querySelector('#newUserName').value.trim();
-        const username = modal.querySelector('#newUserUser').value.trim();
-        const password = modal.querySelector('#newUserPass').value;
-        const role = modal.querySelector('#newUserRole').value;
-
-        if(!name || !username || !password) {
-            showToast('error', 'Faltan datos', 'Completa todos los campos');
-            return;
-        }
-
-        // Verificar que no exista
-        if(db.users.some(u => u.username === username)) {
-            showToast('error', 'Usuario existe', 'Ese nombre de usuario ya está registrado');
-            return;
-        }
-
-        db.users.push({
-            id: Date.now(),
-            name: name,
-            username: username,
-            password: password,
-            role: role
-        });
-
-        saveData();
-        renderUsers();
-        modal.remove();
-        showToast('success', '✅ Creado', 'Usuario agregado correctamente');
-    };
-}
-
-
-function deleteExpense(id) {
-    const e = db.expenses.find(x => x.id === id);
-    if(!e) return;
-
-    const modal = document.createElement('div');
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
-    modal.innerHTML = `
-    <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-        <div style="font-size:60px; color:#ef4444; margin-bottom:15px;">
-            <i class="fas fa-receipt"></i>
-        </div>
-        <h3 style="margin:0 0 10px 0; font-size:22px; color:#1f2937;">¿Eliminar Gasto?</h3>
-        <p style="color:#6b7280; margin-bottom:25px;">¿Seguro que quieres borrar este registro de <strong>$${e.amount.toLocaleString()}</strong>?</p>
-        
-        <div style="display:flex; gap:15px; justify-content:center;">
-            <button id="cancelBtn" 
-                    style="padding:12px 25px; background:#e5e7eb; border:none; border-radius:10px; font-weight:500;">
-                Cancelar
-            </button>
-            <button id="deleteBtn" 
-                    style="padding:12px 25px; background:#ef4444; color:white; border:none; border-radius:10px; font-weight:500;">
-                <i class="fas fa-trash"></i> Sí, Eliminar
-            </button>
-        </div>
-    </div>
-    `;
-    document.body.appendChild(modal);
-
-    modal.querySelector('#cancelBtn').onclick = () => modal.remove();
-    modal.querySelector('#deleteBtn').onclick = () => {
-        db.expenses = db.expenses.filter(exp => exp.id !== id);
-        saveData(); renderExpenses(); updateCounts(); renderCharts();
-        modal.remove();
-        showToast('success', 'Eliminado', 'Gasto borrado');
-    };
-}
-
-function deleteModel(id) {
-    const m = db.models.find(x => x.id === id);
-    if(!m) return;
-
-    const modal = document.createElement('div');
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
-    modal.innerHTML = `
-    <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-        <div style="font-size:60px; color:#ef4444; margin-bottom:15px;">
-            <i class="fas fa-home"></i>
-        </div>
-        <h3 style="margin:0 0 10px 0; font-size:22px; color:#1f2937;">¿Eliminar Plantilla?</h3>
-        <p style="color:#6b7280; margin-bottom:25px;">¿Seguro que quieres borrar la plantilla <strong>${m.name}</strong>?</p>
-        
-        <div style="display:flex; gap:15px; justify-content:center;">
-            <button id="cancelBtn" 
-                    style="padding:12px 25px; background:#e5e7eb; border:none; border-radius:10px; font-weight:500;">
-                Cancelar
-            </button>
-            <button id="deleteBtn" 
-                    style="padding:12px 25px; background:#ef4444; color:white; border:none; border-radius:10px; font-weight:500;">
-                <i class="fas fa-trash"></i> Sí, Eliminar
-            </button>
-        </div>
-    </div>
-    `;
-    document.body.appendChild(modal);
-
-    modal.querySelector('#cancelBtn').onclick = () => modal.remove();
-    modal.querySelector('#deleteBtn').onclick = () => {
-        db.models = db.models.filter(mod => mod.id !== id);
-        saveData(); renderModels();
-        modal.remove();
-        showToast('success', 'Eliminado', 'Plantilla borrada');
-    };
-}
-
-function deleteWorker(id) {
-    const w = db.workers.find(x => x.id === id);
-    if(!w) return;
-
-    const modal = document.createElement('div');
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;";
-    modal.innerHTML = `
-    <div style="background:white; padding:30px; border-radius:16px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-        <div style="font-size:60px; color:#ef4444; margin-bottom:15px;">
-            <i class="fas fa-user-times"></i>
-        </div>
-        <h3 style="margin:0 0 10px 0; font-size:22px; color:#1f2937;">¿Eliminar Trabajador?</h3>
-        <p style="color:#6b7280; margin-bottom:25px;">¿Seguro que quieres borrar a <strong>${w.name}</strong>?<br>Esta acción no se puede deshacer.</p>
-        
-        <div style="display:flex; gap:15px; justify-content:center;">
-            <button id="cancelBtn" 
-                    style="padding:12px 25px; background:#e5e7eb; border:none; border-radius:10px; font-weight:500;">
-                Cancelar
-            </button>
-            <button id="deleteBtn" 
-                    style="padding:12px 25px; background:#ef4444; color:white; border:none; border-radius:10px; font-weight:500;">
-                <i class="fas fa-trash"></i> Sí, Eliminar
-            </button>
-        </div>
-    </div>
-    `;
-    document.body.appendChild(modal);
-
-    modal.querySelector('#cancelBtn').onclick = () => modal.remove();
-    
-    modal.querySelector('#deleteBtn').onclick = () => {
-        db.workers = db.workers.filter(wr => wr.id !== id);
-        saveData();
-        renderWorkers();
-        modal.remove();
-        showToast('success', 'Eliminado', 'Trabajador borrado correctamente');
-    };
-}
-
-    loadData();
+loadData();
 </script>
 </body>
 </html>
